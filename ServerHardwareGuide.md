@@ -54,11 +54,11 @@ A valid vendor hardware support contract covering repair/replacement, firmware u
 
 ## Storage
 
+All drive bays used for RAID arrays must support hot-swap.
+
 ### System Volume
 
 The OS disk must be 255G or larger. The OS disk must be on a RAID array.
-
-All drive bays used for RAID arrays must support hot-swap.
 
 ### NVMe
 
