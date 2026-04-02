@@ -17,6 +17,7 @@
 ## Platform
 
 - `x86_64-v3` or newer (`aarch64` may be approved on a case by case basis)
+- Server class hardware should have ECC RAM
 - UEFI
 - Secure Boot
 - Hardware TPM v2
@@ -33,6 +34,9 @@ Each node must be independently serviceable without affecting the rest of the ra
 - Any node must be removable from the rack without interrupting power distribution, network switching, or operation of any other node
 - Chassis must have an easily operable rail system compatible with the installation rack
 - Internal access must not require special tooling beyond standard hand tools
+- VGA port for local console; HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
+
+Each installation must maintain a crash cart (monitor, keyboard, mouse, required cables) compatible with and usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner.
 
 A valid vendor hardware support contract covering repair/replacement, firmware updates, and support escalation is required for the duration of the node's operational lifetime. Contract expiration must be tracked in the asset management system.
 
@@ -83,7 +87,7 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 ## Networking
 
 - Onboard RJ45 Ethernet required for the primary facility network interface
-- NIC must have an in-tree Linux kernel driver with a good upstream maintenance record and must appear on the RHEL HCL; Intel and Broadcom are established examples - other vendors require approval before procurement
+- NIC must have an in-tree Linux kernel driver with a good upstream maintenance record and must appear on the RHEL HCL; Intel, QLogic, and Broadcom are established examples - other vendors require approval before procurement
 - Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6; note that some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
 - Dedicated physical BMC port required, connected to an isolated out-of-band management network (separate VLAN or physical network)
 
@@ -91,7 +95,7 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 
 ## GPU
 
-NVIDIA GPUs must be Turing generation (2018) or newer — RTX 20-series, Quadro RTX, Tesla T4, and all subsequent generations. GPUs are otherwise optional and workload-dependent.
+NVIDIA GPUs must be Turing generation (2018) or newer - RTX 20-series, Quadro RTX, Tesla T4, and all subsequent generations. GPUs are otherwise optional and workload-dependent.
 
 ---
 
@@ -122,12 +126,10 @@ The TPM must have full Linux support.
 - Fully unlocked at procurement - no capability tiers or license-gated features
 - License expiration tracked in monitoring or asset management system; renewal budgeted for the full support window
 - Remote console (GUI/VNC or equivalent), remote firmware update, remote BIOS/UEFI configuration
+- Ability to monitor power supply state/consumption
 - IPMI over LAN (`lanplus`)
 - Redfish 1.20 or newer, Redfish schema 2023.3 or newer
 - Dedicated physical BMC network port (see Networking above)
-- VGA port for local console; HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
-
-Each installation must maintain a crash cart (monitor, keyboard, mouse, required cables) compatible with and usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner.
 
 ---
 
