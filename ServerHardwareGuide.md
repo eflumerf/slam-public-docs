@@ -1,13 +1,14 @@
 # SLAM Server Hardware Specification
 
 **Owners:** SLAM
+
 **Applies To:** DAQ/experiment server-class deployments
 
 ---
 
 ## Prohibited
 
-- **Intel VROC** — must not be used even if present in firmware
+- **Intel VROC** It must not be used even if present in firmware
 - **Pre-Turing NVIDIA GPUs** (Pascal/GTX 10-series, P100, Maxwell, Kepler, and older - 2018) - no GSP support, unsupported by the open-source `nvidia-open` driver stack
 - **SFP/SFP+** for the primary facility network interface
 - **Shared-backplane enclosures** (blade chassis, shared midplanes) - each node must occupy its own independent chassis.
@@ -17,6 +18,7 @@
 
 ## Platform
 
+- Components must not be end of life at purchase time
 - `x86_64-v3` or newer (`aarch64` may be approved on a case by case basis)
 - Server class hardware should have ECC RAM
 - UEFI
@@ -33,9 +35,10 @@
 Each node must be independently serviceable without affecting the rest of the rack:
 
 - Any node must be removable from the rack without interrupting power distribution, network switching, or operation of any other node
-- Chassis must have an easily operable rail system compatible with the installation rack
+- Rack mount chassis must have an easily operable rail system compatible with the installation rack
 - Internal access must not require special tooling beyond standard hand tools
-- VGA port for local console; HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
+- VGA port for local console
+  -  HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
 
 Each installation must maintain a crash cart (monitor, keyboard, mouse, required cables) compatible with and usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner.
 
@@ -75,7 +78,7 @@ Must use a Broadcom-based hardware RAID controller with battery backup (BBU or c
 
 Boot disk note: the hardware RAID controller presents a single logical volume to the OS. The ESP on that volume is implicitly mirrored - no additional replication is needed.
 
-### RAID Management Tooling
+### Hardware RAID Management Tooling
 
 | Tool | Scope |
 |---|---|
@@ -89,15 +92,17 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 
 - Onboard RJ45 Ethernet required for the primary facility network interface
 - NIC must have an in-tree Linux kernel driver with a good upstream maintenance record and must appear on the RHEL HCL; Intel, QLogic, and Broadcom are established examples - other vendors require approval before procurement
-- High speed network cards must support DPDK and ROCE (v2+)
-- Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6; note that some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
+- High speed network cards (>10G) must support DPDK and ROCE (v2+)
+- Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6
+  -  NOTE: some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
 - Dedicated physical BMC port required, connected to an isolated out-of-band management network (separate VLAN or physical network)
 
 ---
 
 ## GPU
+GPUs are optional and workload-dependent.
 
-NVIDIA GPUs must be Turing generation (2018) or newer - RTX 20-series, Quadro RTX, Tesla T4, and all subsequent generations. GPUs are otherwise optional and workload-dependent.
+NVIDIA GPUs must work with the NVIDIA open source driver (Turing generation (2018) or newer - RTX 20-series, Quadro RTX, Tesla T4, etc)
 
 ---
 
@@ -105,7 +110,9 @@ NVIDIA GPUs must be Turing generation (2018) or newer - RTX 20-series, Quadro RT
 
 Systems with LVFS/FWUPD support are preferred for simplified firmware lifecycle management. All systems must support firmware updates via standard tooling when mandated.
 
-It must be possible to update the firmware from one of Linux, BMC, or on board firmware. Firmware updates must not require DOS or Windows.
+It must be possible to update the system firmware from at least one of: Linux, BMC, or "on board" firmware.
+
+Firmware updates for any component must not **require** DOS or Windows.
 
 **Current operational note:** Automatic firmware updates are disabled. Updates are applied through a controlled change process.
 
