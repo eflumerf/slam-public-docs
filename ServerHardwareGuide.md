@@ -11,6 +11,7 @@
 - **Pre-Turing NVIDIA GPUs** (Pascal/GTX 10-series, P100, Maxwell, Kepler, and older - 2018) - no GSP support, unsupported by the open-source `nvidia-open` driver stack
 - **SFP/SFP+** for the primary facility network interface
 - **Shared-backplane enclosures** (blade chassis, shared midplanes) - each node must occupy its own independent chassis.
+- **Prototypes** Products not part of a standard production line must be approved in advance
 
 ---
 
@@ -88,6 +89,7 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 
 - Onboard RJ45 Ethernet required for the primary facility network interface
 - NIC must have an in-tree Linux kernel driver with a good upstream maintenance record and must appear on the RHEL HCL; Intel, QLogic, and Broadcom are established examples - other vendors require approval before procurement
+- High speed network cards must support DPDK and ROCE (v2+)
 - Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6; note that some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
 - Dedicated physical BMC port required, connected to an isolated out-of-band management network (separate VLAN or physical network)
 
