@@ -21,6 +21,7 @@
 
 - Components must not be end of life at purchase time
 - `x86_64-v3` or newer (`aarch64` may be approved on a case by case basis)
+  - "Hyperthreading"/"smt" must not be mandatory
 - Server class hardware should have ECC RAM
   - Systems must report NUMA topology correctly to the OS (verify via `numactl --hardware` post-installation)
   - Single-node NUMA is acceptable
@@ -38,7 +39,7 @@
 Each node must be independently serviceable without affecting the rest of the rack:
 
 - Any node must be removable from the rack without interrupting power distribution, network switching, or operation of any other node
-- Rack mount chassis must have an easily operable rail system compatible with the installation rack
+- Rack mount chassis must have an easily operable rail system compatible with the 19 inch installation rack
 - Internal access must not require special tooling beyond standard hand tools
 - VGA port for local console
   -  HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
