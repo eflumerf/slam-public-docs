@@ -21,6 +21,7 @@
 
 - Components must not be end of life at purchase time
 - `x86_64-v3` or newer (`aarch64` may be approved on a case by case basis)
+  - "Hyperthreading"/"smt" must be possible
   - "Hyperthreading"/"smt" must not be mandatory
 - Server class hardware should have ECC RAM
   - Systems must report NUMA topology correctly to the OS (verify via `numactl --hardware` post-installation)
