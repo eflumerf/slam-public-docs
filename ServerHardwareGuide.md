@@ -29,6 +29,7 @@
 - UEFI
 - Secure Boot
 - Hardware TPM v2
+- Hardware Virtualisation support (VT-d/VT-x/AMD-V/AMD-Vi etc)
 - Must appear on the current [RHEL Hardware Compatibility List](https://catalog.redhat.com/hardware)
 - CPU and RAM must meet RHEL minimums and must not exceed RHEL maximums for the intended configuration; sizing is otherwise workload-dependent
 - Must have at least 2 external USB ports dedicated for installation/crash/recovery
