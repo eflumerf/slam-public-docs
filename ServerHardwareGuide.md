@@ -92,7 +92,7 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 
 - Onboard RJ45 Ethernet required for the primary facility network interface
 - NIC must have an in-tree Linux kernel driver with a good upstream maintenance record and must appear on the RHEL HCL; Intel, QLogic, Mellanox, and Broadcom are established examples - other vendors require approval before procurement
-- High speed network cards (>10G) must support DPDK and ROCE (v2+)
+- High speed network cards (>10G) must support SR-IOV, DPDK, and ROCE (v2+)
 - Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6
   -  NOTE: some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
 - Dedicated physical BMC port required, connected to an isolated out-of-band management network (separate VLAN or physical network)
