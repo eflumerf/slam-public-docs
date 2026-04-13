@@ -148,6 +148,8 @@ The TPM must have full Linux support.
 - BMC must operate independently of OS state, including during OS installation, kernel panic, and power-cycle recovery
 - Remote Serial console (SOL), remote GUI console (GUI/VNC or equivalent), remote firmware update, remote BIOS/UEFI configuration
 - Ability to monitor power supply state/consumption
+- Ability to view fan speed
+- Ability to view system temperatures
 - IPMI over LAN (`lanplus`)
 - Redfish 1.20 or newer, Redfish schema 2023.3 or newer
 - BMC configuration (users, network, BIOS settings) must be fully exportable and importable via Redfish
