@@ -14,13 +14,12 @@
 - **Shared-backplane enclosures** (blade chassis, shared midplanes) - each node must occupy its own independent chassis.
 - **Internet dependencies** All components must operate in an air gapped network without an external route
 - **Prototypes** Products not part of a standard production line must be approved in advance
-- **End of Life** Any hardware component with an announced end of life within 18 months
+- **End of Life** Any hardware component that is end of life at purchase time, or with an announced end of life within 18 months of purchase
 
 ---
 
 ## Platform
 
-- Components must not be end of life at purchase time
 - `x86_64-v3` or newer (`aarch64` may be approved on a case by case basis)
   - "Hyperthreading"/"smt" must be possible
   - "Hyperthreading"/"smt" must not be mandatory
@@ -29,12 +28,12 @@
   - Single-node NUMA is acceptable
 - UEFI
 - Secure Boot
-- Hardware TPM v2
+- Hardware TPM v2 (see Hardware TPM v2 below)
 - Hardware Virtualization support (VT-d/VT-x/AMD-V/AMD-Vi etc)
 - Must appear on the current [RHEL Hardware Compatibility List](https://catalog.redhat.com/hardware)
 - CPU and RAM must meet RHEL minimums and must not exceed RHEL maximums for the intended configuration; sizing is otherwise workload-dependent
 - Must have at least 2 external USB ports dedicated for installation/crash/recovery
-- Local video console (1 KVM per rack is sufficient provided cables can reach neighboring racks)
+- Local video console port (see Serviceability below)
 
 ---
 
@@ -48,11 +47,9 @@ Each node must be independently serviceable without affecting the rest of the ra
 - VGA port for local console
   -  HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
 
-Each installation must maintain a crash cart (monitor, keyboard, mouse, required cables) compatible with and usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner.
+Each installation must maintain a crash cart (monitor, keyboard, mouse, required cables) compatible with and usable on all deployed nodes. A rack KVM counts as a crash cart provided its cables can reach every node it serves (one per rack is sufficient if neighboring racks are within reach). The crash cart is the responsibility of the experiment or installation owner.
 
-A valid vendor hardware support contract covering repair/replacement, firmware updates, and support escalation is required for the duration of the node's operational lifetime. Contract expiration must be tracked in the asset management system.
-
-> **Open question:** Minimum support tier (next-business-day on-site vs. depot return) - likely varies by installation geography.
+A valid vendor hardware support contract covering repair/replacement, firmware updates, and support escalation is required for the duration of the node's operational lifetime. Contract expiration must be tracked in the asset management system. Minimum support tier is an open question (see Open Questions).
 
 ---
 
@@ -108,7 +105,7 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
   -  NOTE: NIC firmware LLDP agents (e.g. Intel `fw-lldp-agent`) consume LLDP frames before the OS sees them; they must be disableable and must remain disabled across reboots. Verify with `lldpcli show neighbors`
 - Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6
   -  NOTE: some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
-- Dedicated physical BMC port required, connected to an isolated out-of-band management network (separate VLAN or physical network)
+- BMC traffic must not share the primary facility interface (see BMC below)
 
 ---
 
@@ -162,14 +159,14 @@ The TPM must have full Linux support.
 - IPMI over LAN (`lanplus`)
 - Redfish 1.20 or newer, Redfish schema 2023.3 or newer
 - BMC configuration (users, network, BIOS settings) must be fully exportable and importable via Redfish
-- Dedicated physical BMC network port (see Networking above)
+- Dedicated physical BMC network port, connected to an isolated out-of-band management network (separate VLAN or physical network)
 
 ---
 
 ## Open Questions
 
-- Minimum vendor support tier (Serviceability)
-- GPU vendor policy beyond NVIDIA GSP (GPU)
+- Minimum vendor support tier (Serviceability): next-business-day on-site vs. depot return - likely varies by installation geography
+- GPU vendor policy beyond NVIDIA `nvidia-open` (GPU)
 - NVMe hot-swap requirement - currently required for RAID arrays only; should it extend to single NVMe devices?
 
 ---
