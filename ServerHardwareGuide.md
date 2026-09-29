@@ -1,91 +1,192 @@
-# SLAM Server Hardware Specification
+# SLAM Server Hardware Guide
 
 **Owners:** SLAM
 
-**Applies To:** DAQ/experiment server-class deployments
+**Applies To:** server-class deployments
+
+**Last Reviewed:** 2026-09-29
+
+---
+
+## Purpose and Scope
+
+This document defines the hardware requirements for server-class systems
+procured for DAQ and experiment use and supported by SLAM. Systems are
+expected to run for 10+ years across multiple RHEL/AlmaLinux major
+versions, often on air-gapped networks, with limited on-site staff. The
+requirements below prioritize long-term Linux support, remote
+serviceability, and uniform tooling over peak performance or lowest
+purchase price.
+
+### Requirement Levels
+
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are used as
+defined in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). In short:
+
+- **MUST** / **MUST NOT**: absolute requirement. Non-compliance requires a
+  written exception.
+- **SHOULD** / **SHOULD NOT**: recommended. Deviations must be justified
+  in the procurement request.
+- **MAY**: optional.
+
+### Exceptions and Approvals
+
+Any item in this document marked as requiring approval, and any deviation
+from a MUST, is approved by **SLAM**. Approval must be obtained before
+procurement and recorded with the purchase request.
+
+### Requirement IDs
+
+Every requirement has a stable ID (e.g. `SLAM-2026-PLAT-03`). Reference IDs in
+quotes, tickets, and exception requests rather than quoting the text, so
+that references survive rewording. IDs denote when they were added.
+
+### Verify Column
+
+The Verify column names how compliance is confirmed. `Quote` means the
+item is checked against the vendor quote or datasheet before purchase.
+Commands are run on the delivered system from a RHEL/AlmaLinux install.
+Detailed acceptance procedures will be provided in a separate checklist.
 
 ---
 
 ## Prohibited
 
-- **Intel VROC** It must not be used even if present in firmware
-- **NVIDIA GPUs not supported by the `nvidia-open` kernel modules** - the open modules require a GSP-equipped GPU (Turing, 2018, or newer); this excludes Volta/V100, Pascal/GTX 10-series/P100, Maxwell, Kepler, and older. Check the [NVIDIA open GPU kernel modules supported list](https://github.com/NVIDIA/open-gpu-kernel-modules) before procurement
-- **SFP/SFP+** for the primary facility network interface
-- **Shared-backplane enclosures** (blade chassis, shared midplanes) - each node must occupy its own independent chassis.
-- **Internet dependencies** All components must operate in an air gapped network without an external route
-- **Prototypes** Products not part of a standard production line must be approved in advance
-- **End of Life** Any hardware component that is end of life at purchase time, or with an announced end of life within 18 months of purchase
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-PROH-01 | MUST NOT | Use Intel VROC, even if present in firmware | Quote; BIOS settings |
+| SLAM-2026-PROH-02 | MUST NOT | Include NVIDIA GPUs unsupported by the `nvidia-open` kernel modules. Check the [NVIDIA open GPU kernel modules supported list](https://github.com/NVIDIA/open-gpu-kernel-modules) before procurement | Quote; `lspci -nn` |
+| SLAM-2026-PROH-03 | MUST NOT | Use SFP/SFP+ for the primary facility network interface | Quote; `lspci`, `ethtool` |
+| SLAM-2026-PROH-04 | MUST NOT | Use shared-backplane enclosures (blade chassis, shared midplanes). Each node must occupy its own independent chassis | Quote |
+| SLAM-2026-PROH-05 | MUST NOT | Depend on internet access for any component. All components must operate on an air-gapped network without an external route | Quote; vendor documentation |
+| SLAM-2026-PROH-06 | MUST NOT | Procure prototypes or products not part of a standard production line without prior approval | Quote |
+| SLAM-2026-PROH-07 | MUST NOT | Procure any hardware component that is end of life at purchase time, or with an announced end of life within 18 months of purchase | Quote; vendor lifecycle notice |
+
+### Rationale
+
+- **VROC** is firmware-assisted software RAID tied to Intel platform
+  firmware and a hardware license key. It adds a vendor-specific layer on
+  top of `mdadm` (IMSM metadata) without adding value over plain `mdadm`,
+  and the array becomes dependent on a specific motherboard generation.
+- **`nvidia-open` only**: the proprietary kernel modules are out-of-tree
+  and lag kernel releases. Requiring GPUs supported by the open modules
+  keeps the GPU stack buildable across the 3+ RHEL major versions in
+  service at any time.
+- **No SFP+ on the primary interface**: transceiver compatibility and
+  vendor locking create a support matrix that changes with every switch
+  refresh. Copper RJ45 is uniform across the facility.
+- **No shared backplanes**: chassis midplanes and chassis managers are a
+  shared failure domain and a shared lifecycle. A node's service life
+  should not be bounded by an enclosure's.
+- **Air gap**: many installations have no external route. Any component
+  that "phones home" for licensing, activation, or updates will fail.
+- **No prototypes / no near-EOL**: 10+ year service life requires a
+  spares pipeline and a support contract that a prototype or EOL part
+  cannot provide.
 
 ---
 
 ## Platform
 
-- `x86_64-v3` or newer (`aarch64` may be approved on a case by case basis)
-  - "Hyperthreading"/"smt" must be possible
-  - "Hyperthreading"/"smt" must not be mandatory
-- Server class hardware should have ECC RAM
-  - Systems must report NUMA topology correctly to the OS (verify via `numactl --hardware` post-installation)
-  - Single-node NUMA is acceptable
-- UEFI
-- Secure Boot
-- Hardware TPM v2 (see Hardware TPM v2 below)
-- Hardware Virtualization support (VT-d/VT-x/AMD-V/AMD-Vi etc)
-- Must appear on the current [RHEL Hardware Compatibility List](https://catalog.redhat.com/hardware)
-- CPU and RAM must meet RHEL minimums and must not exceed RHEL maximums for the intended configuration; sizing is otherwise workload-dependent
-- Must have at least 2 external USB ports dedicated for installation/crash/recovery
-- Local video console port (see Serviceability below)
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-PLAT-01 | MUST | CPU implements `x86_64-v3` or newer. `aarch64` MAY be approved on case by case basis | `ld.so --help` (lists supported glibc-hwcaps) |
+| SLAM-2026-PLAT-02 | MUST | SMT ("Hyperthreading") if available, can be disabled in firmware | BIOS settings; `lscpu` |
+| SLAM-2026-PLAT-03 | MUST | ECC RAM | `dmidecode -t memory`; `edac-util` |
+| SLAM-2026-PLAT-04 | MUST | NUMA topology is reported correctly to the OS. Single-node NUMA is acceptable | `numactl --hardware` |
+| SLAM-2026-PLAT-05 | MUST | UEFI boot | `ls /sys/firmware/efi` |
+| SLAM-2026-PLAT-06 | MUST | Secure Boot capable (see SLAM-2026-FW-06) | `mokutil --sb-state` |
+| SLAM-2026-PLAT-07 | MUST | Hardware TPM v2 (see TPM section) | `tpm2_getcap properties-fixed` |
+| SLAM-2026-PLAT-08 | MUST | Hardware virtualization support with IOMMU (VT-x/VT-d, AMD-V/AMD-Vi, or equivalent) | `virt-host-validate` |
+| SLAM-2026-PLAT-09 | MUST | Listed on the current [RHEL Hardware Compatibility List](https://catalog.redhat.com/hardware) | Quote; catalog lookup |
+| SLAM-2026-PLAT-10 | MUST | CPU and RAM meet RHEL minimums and do not exceed RHEL maximums for the intended configuration. Sizing is otherwise workload-dependent | Quote |
+| SLAM-2026-PLAT-11 | MUST | At least 2 external USB ports available for installation/crash/recovery | Physical inspection |
+| SLAM-2026-PLAT-12 | MUST | Local video console port (see SLAM-2026-SERV-04) | Physical inspection |
+| SLAM-2026-PLAT-13 | MUST | Hardware watchdog timer usable from Linux via an in-tree driver (e.g. `iTCO_wdt`, `sp5100_tco`, or the BMC watchdog via `ipmi_watchdog`), exposed as `/dev/watchdog` and configurable with `systemd` `RuntimeWatchdogSec=` | `ls /dev/watchdog*`; `wdctl`; `systemd-analyze cat-config systemd/system.conf | grep Watchdog` |
+
+### Rationale
+
+- `x86_64-v3` is the floor for current RHEL builds and gives headroom for
+  the service life.
+- SMT must be switchable because some DAQ workloads need
+  it off for latency determinism while others benefit from it.
+- ECC and correct NUMA reporting are needed for reliable long-running systems and
+  for pinning DAQ processes.
+- The RHEL HCL requirement is what makes the vendor support contract and
+  Red Hat support usable together.
+- A hardware watchdog is the only recovery path for a hung kernel on a
+  remote site when nobody is present to power-cycle the node. `systemd`
+  drives it natively.
 
 ---
 
 ## Serviceability
 
-Each node must be independently serviceable without affecting the rest of the rack:
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-SERV-01 | MUST | Any node is removable from the rack without interrupting power distribution, network switching, or operation of any other node | Quote; rack design review |
+| SLAM-2026-SERV-02 | MUST | Rack-mount chassis has an easily operable rail system compatible with the 19 inch installation rack | Quote; physical inspection |
+| SLAM-2026-SERV-03 | MUST | Internal access requires no special tooling beyond standard hand tools | Physical inspection |
+| SLAM-2026-SERV-04 | MUST | VGA port for local console. HDMI/DisplayPort is acceptable only if a compatible monitor and cables are **permanently** co-located with the system | Physical inspection |
+| SLAM-2026-SERV-05 | MUST | Each installation maintains a crash cart (monitor, keyboard, mouse, required cables) usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner | Installation review |
+| SLAM-2026-SERV-06 | MUST | A vendor hardware support contract covering repair/replacement, firmware updates, and support escalation is in place for the node's operational lifetime | Quote; contract |
+| SLAM-2026-SERV-07 | MUST | Support contract expiration is tracked in the asset management system | Asset record |
 
-- Any node must be removable from the rack without interrupting power distribution, network switching, or operation of any other node
-- Rack mount chassis must have an easily operable rail system compatible with the 19 inch installation rack
-- Internal access must not require special tooling beyond standard hand tools
-- VGA port for local console
-  -  HDMI/DisplayPort acceptable only if a compatible monitor and cables are **permanently** co-located with the system
+Minimum support tier is an open question (see SLAM-2026-OQ-01).
 
-Each installation must maintain a crash cart (monitor, keyboard, mouse, required cables) compatible with and usable on all deployed nodes. A rack KVM counts as a crash cart provided its cables can reach every node it serves (one per rack is sufficient if neighboring racks are within reach). The crash cart is the responsibility of the experiment or installation owner.
+### Rationale
 
-A valid vendor hardware support contract covering repair/replacement, firmware updates, and support escalation is required for the duration of the node's operational lifetime. Contract expiration must be tracked in the asset management system. Minimum support tier is an open question (see Open Questions).
+Installations are often remote with limited on-site staff. A node that
+can be pulled and worked on without touching its neighbors, using tools
+and a console that are already present, keeps repair time short and
+avoids collateral downtime. VGA is preferred because crash carts and rack
+KVMs are overwhelmingly VGA.
+
+A rack KVM counts as a crash cart provided its cables reach every node it
+serves (one per rack is sufficient if neighboring racks are within reach).
 
 ---
 
 ## Power
 
-- Redundant (N+1) power supplies required
-- PSUs must be hot-swappable
-- PSU status must be monitorable via BMC/IPMI
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-PWR-01 | MUST | Redundant (N+1) power supplies | Quote; physical inspection |
+| SLAM-2026-PWR-02 | MUST | PSUs are hot-swappable | Quote |
+| SLAM-2026-PWR-03 | MUST | PSU status is monitorable via BMC (Redfish or IPMI) | `ipmitool sdr type 'Power Supply'`; Redfish `/Chassis/*/Power` |
+
+### Rationale
+
+PSU failure is the most common field repair. Redundant, hot-swap,
+monitored supplies turn it from an outage into a scheduled swap.
 
 ---
 
 ## Storage
 
-All drive bays used for RAID arrays must support hot-swap.
+### General
 
-Per-drive health and wear must be readable from Linux for every drive type (`nvme-cli` or `smartmontools`, including passthrough behind RAID controllers, e.g. `smartctl -d megaraid,N`). Controllers that obscure per-drive SMART data are prohibited.
-
-### System Volume
-
-The OS volume must be at least 256 GB usable (after any RAID). The OS volume must be on a RAID array.
-
-### NVMe
-
-Configure as one of: `mdadm` software RAID (preferred for RAID1/RAID10), hardware RAID (see tooling requirements below), LVM on raw devices, or raw devices.
-
-`mdadm` is preferred - it matches native NVMe performance for RAID1/RAID10, provides straightforward kernel-native monitoring, and avoids vendor lock-in. Hardware RAID is permitted where the controller is fully supported by the tooling in the table below.
-
-Boot disk note: with `mdadm`, create a separate EFI System Partition (ESP) on every RAID member. ESP contents must be synchronised by a hook (e.g. triggered on `grub2-mkconfig`, `fwupd`, or bootloader package updates), and each ESP must be registered as a boot entry with `efibootmgr`. Do not place the ESP itself on an `mdadm` device - UEFI firmware cannot read it, and RHEL does not support `/boot/efi` on software RAID.
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-STOR-01 | MUST | All drive bays used for RAID arrays support hot-swap | Quote |
+| SLAM-2026-STOR-02 | MUST | Per-drive health and wear is readable from Linux for every drive type, including drives behind RAID controllers (`nvme-cli`, `smartmontools`, `smartctl -d megaraid,N`). Controllers that obscure per-drive SMART data are prohibited | `smartctl --scan`; `nvme list` |
 
 ### HDD and SATA SSD
 
-Must use a Broadcom-based hardware RAID controller with battery backup (BBU or capacitor-backed write cache). Broadcom is required for standardization: one controller family and one toolset (`storcli`/`storcli2`) across all installations. RAID1 or RAID10 required for redundant arrays. RAID5 or RAID6 may only be used when storage size is more important than storage/recovery speed.
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-STOR-03 | MUST | Broadcom-based hardware RAID controller with battery or capacitor-backed write cache | Quote; `storcli /c0 show` |
+| SLAM-2026-STOR-04 | MUST | RAID1 or RAID10 for redundant arrays. RAID5 or RAID6 MAY be used only when capacity matters more than performance and rebuild time | `storcli /c0 /vall show` |
 
-Boot disk note: the hardware RAID controller presents a single logical volume to the OS. The ESP on that volume is implicitly mirrored - no additional replication is needed.
+With hardware RAID the controller presents a single logical volume, so
+the ESP on that volume is implicitly mirrored. No ESP replication is
+needed.
 
 ### Hardware RAID Management Tooling
+
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-STOR-05 | MUST | Any hardware RAID controller is fully manageable from Linux with one of the tools below | Tool runs and enumerates the controller |
 
 | Tool | Scope |
 |---|---|
@@ -93,19 +194,66 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 | `storcli2` | Broadcom MegaRAID, Gen 3+ (9600-series and newer) |
 | `perccli` / `perccli2` | Dell OEM rebrands of `storcli` / `storcli2`; functionally identical |
 
+### System Volume
+
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-STOR-06 | MUST | OS volume is at least 256 GB usable (after any RAID) | `lsblk` |
+| SLAM-2026-STOR-07 | MUST | OS volume resides on a RAID array | `lsblk`; `cat /proc/mdstat` or `storcli /c0 show` |
+
+### NVMe
+
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-STOR-08 | MUST | NVMe is configured as one of: `mdadm` software RAID, hardware RAID (controller supported per SLAM-2026-STOR-10), LVM on raw devices, or raw devices | `lsblk` |
+| SLAM-2026-STOR-09 | SHOULD | `mdadm` is used for NVMe RAID1/RAID10 | `cat /proc/mdstat` |
+| SLAM-2026-STOR-10 | MUST | With `mdadm`, a separate EFI System Partition (ESP) exists on every RAID member; ESP contents are synchronised by a hook (e.g. on `grub2-mkconfig`, `fwupd`, or bootloader package updates); each ESP is registered with `efibootmgr`. The ESP itself MUST NOT be on an `mdadm` device | `efibootmgr -v`; `lsblk -f` |
+
+### Rationale
+
+- **Per-drive SMART**: wear and pre-failure indicators are the only
+  warning before a rebuild. A controller that hides them removes the
+  warning.
+- **`mdadm` for NVMe**: matches native NVMe performance for RAID1/RAID10,
+  is monitored by the kernel and standard tooling, and has no vendor
+  dependency. Hardware RAID is allowed where the controller is fully
+  covered by SLAM-2026-STOR-10.
+- **ESP handling**: UEFI firmware cannot read an `mdadm` device, and RHEL
+  does not support `/boot/efi` on software RAID. Per-member ESPs with
+  synced contents are the supported pattern.
+- **Broadcom for spinning/SATA**: standardization. One controller family
+  and one toolset across all installations means one set of monitoring
+  scripts, one spares pool, and one runbook. `megaraid_sas`/`mpi3mr` are
+  in-tree.
+- **RAID1/10 default**: rebuild time on large RAID5/6 arrays is a
+  multi-day exposure window on a system with no on-site staff.
+
 ---
 
 ## Networking
 
-- Onboard RJ45 Ethernet required for the primary facility network interface
-- NIC must have an in-tree Linux kernel driver with a good upstream maintenance record and must appear on the RHEL HCL; Intel, QLogic, Mellanox, and Broadcom are established examples - other vendors require approval before procurement
-- Network interfaces of 10 Gbit/s or faster must support SR-IOV and RoCE v2, and must have an upstream DPDK poll-mode driver
-- NICs must expose correct NUMA affinity and interrupt topology to the OS if relevant
-- LLDP frames must reach the OS so that `lldpd`/`lldpad` can see the switch neighbour (chassis ID, port ID, VLAN) for topology auditing
-  -  NOTE: NIC firmware LLDP agents (e.g. Intel `fw-lldp-agent`) consume LLDP frames before the OS sees them; they must be disableable and must remain disabled across reboots. Verify with `lldpcli show neighbors`
-- Network boot must support both PXE and UEFI HTTP boot over IPv4 **and** IPv6
-  -  NOTE: some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment
-- BMC traffic must not share the primary facility interface (see BMC below)
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-NET-01 | MUST | Onboard RJ45 Ethernet for the primary facility network interface | Quote; `ethtool <if>` (Port: Twisted Pair) |
+| SLAM-2026-NET-02 | MUST | NIC has an in-tree Linux kernel driver with a good upstream maintenance record and appears on the RHEL HCL. Intel, QLogic, Mellanox, and Broadcom are established examples; other vendors require approval before procurement | Quote; `ethtool -i <if>` |
+| SLAM-2026-NET-03 | MUST | Interfaces of 10 Gbit/s or faster support SR-IOV and RoCE v2, and have an upstream DPDK poll-mode driver | Quote; `lspci -vv` (SR-IOV capability); `rdma link` |
+| SLAM-2026-NET-04 | MUST | NICs expose correct NUMA affinity and interrupt topology to the OS where relevant | `cat /sys/class/net/<if>/device/numa_node`; `/proc/interrupts` |
+| SLAM-2026-NET-05 | MUST | LLDP frames reach the OS so that `lldpd`/`lldpad` can see the switch neighbour (chassis ID, port ID, VLAN). NIC firmware LLDP agents (e.g. Intel `fw-lldp-agent`) that consume LLDP frames before the OS MUST be disableable and remain disabled across reboots | `lldpcli show neighbors`; `ethtool --show-priv-flags <if>` |
+| SLAM-2026-NET-06 | MUST | Network boot supports both PXE and UEFI HTTP boot over IPv4 **and** IPv6. Some UEFI HTTP boot implementations have dual-stack quirks and must be validated before deployment | Boot test on facility network |
+| SLAM-2026-NET-07 | MUST | BMC traffic does not share the primary facility interface (see SLAM-2026-BMC-13) | Physical inspection |
+
+### Rationale
+
+Onboard copper is the lowest-variance option across a 10-year refresh
+cycle of facility switches. In-tree drivers are what allow the same
+hardware to move across RHEL major versions without vendor DKMS packages.
+
+SR-IOV/RoCE/DPDK are baseline for DAQ data paths. LLDP visibility from
+the OS is how cabling and VLAN errors are caught during commissioning and
+audited later.
+
+Dual-stack PXE/HTTP boot is required because the provisioning network
+is IPv6-capable and firmware implementations vary.
 
 ---
 
@@ -113,61 +261,100 @@ Boot disk note: the hardware RAID controller presents a single logical volume to
 
 GPUs are optional and workload-dependent.
 
-NVIDIA GPUs must be supported by the `nvidia-open` kernel modules (see Prohibited). In practice this means Turing (2018) or newer - RTX 20-series, Quadro RTX, Tesla T4, and later.
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-GPU-01 | MUST | NVIDIA GPUs are supported by the `nvidia-open` kernel modules (see SLAM-2026-PROH-02). | Quote; `lspci -nn`; `modinfo nvidia` |
+
+GPU vendor policy beyond NVIDIA is an open question (see SLAM-2026-OQ-02).
+
+### Rationale
+
+See SLAM-2026-PROH-02.
 
 ---
 
 ## Firmware
 
-Systems with LVFS/FWUPD support are preferred for simplified firmware lifecycle management. All systems must support firmware updates via standard tooling when mandated.
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-FW-01 | SHOULD | System firmware is updatable via LVFS/`fwupd` | `fwupdmgr get-devices` |
+| SLAM-2026-FW-02 | MUST | System firmware is updatable from at least one of: Linux, BMC, or on-board firmware UI | Vendor documentation; test |
+| SLAM-2026-FW-03 | MUST | Firmware updates are possible via Redfish | Redfish `UpdateService` |
+| SLAM-2026-FW-04 | MUST NOT | Any component's firmware update requires DOS or Windows | Vendor documentation |
+| SLAM-2026-FW-05 | MUST | Firmware updates are applicable via standard tooling when mandated | Test |
+| SLAM-2026-FW-06 | MUST | Secure Boot key rotation is supported. Systems ship with the current Microsoft UEFI CAs and KEK enrolled (not the expired 2011 set). `db`/`dbx`/`KEK` updates are applicable from Linux via `fwupd`. Owner enrolment of custom `db` keys and MOK is supported | `mokutil --db`; `mokutil --kek`; `fwupdmgr get-devices` (UEFI dbx) |
 
-It must be possible to update the system firmware from at least one of: Linux, BMC, or "on board" firmware.
+**Current operational note:** Automatic firmware updates are disabled.
+Updates are applied through a controlled change process.
 
-Firmware updates must be possible via Redfish.
+### Rationale
 
-Firmware updates for any component must not **require** DOS or Windows.
+Firmware is the one component that cannot be replaced by reinstalling
+the OS.
 
-**Current operational note:** Automatic firmware updates are disabled. Updates are applied through a controlled change process.
+Over 10 years it will need updating for security (dbx, Secure
+Boot CA rotation) and for compatibility with newer RHEL releases.
 
-Secure Boot key rotation must be supported. Systems must ship with the current Microsoft UEFI CAs and KEK enrolled (not the expired 2011 set). `db`/`dbx`/`KEK` updates must be applicable from Linux via `fwupd`. Owner enrolment of custom `db` keys and MOK must be supported.
+Every update path must work from Linux or the BMC on an air-gapped network.
 
 ---
 
 ## Hardware TPM v2
 
-Required!
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-TPM-01 | MUST | Hardware TPM 2.0 is present. It MAY be integrated into the motherboard, CPU, or another component | `tpm2_getcap properties-fixed` |
+| SLAM-2026-TPM-02 | MUST | Full Linux support via `tpm2-tools` / TPM2-TSS | `tpm2_pcrread`; `tpm2_getcap algorithms` |
+| SLAM-2026-TPM-03 | MUST | EK certificate retrieval and standard attestation workflows are supported | `tpm2_getekcertificate` |
+| SLAM-2026-TPM-04 | MUST | EK certificate provisioning behavior (on-chip vs. retrieved from vendor infrastructure) is documented per vendor. Retrieval MUST NOT require internet access from the node (see SLAM-2026-PROH-05) | Vendor documentation |
 
-Must support EK certificate retrieval and standard attestation workflows (`tpm2-tools` / TPM2-TSS). Intended uses include encrypted-at-rest storage, secret-zero bootstrapping, and zero-trust identity anchoring.
+### Rationale
 
-EK certificate provisioning behavior (on-chip vs. retrieved from vendor infrastructure) must be documented per vendor. Retrieval must not require internet access from the node (see Prohibited: Internet dependencies).
-
-This can be integrated into the motherboard, CPU, or some other method.
-
-The TPM must have full Linux support.
+Intended uses are encrypted-at-rest storage, secret-zero bootstrapping,
+and zero-trust identity anchoring. All three depend on a TPM that Linux
+can drive fully and whose EK can be validated without an external route.
 
 ---
 
 ## BMC
 
-- All BMC features (remote console, virtual media, Redfish, firmware update) must be included with perpetual licenses at procurement - no capability tiers
-- Where a vendor only offers time-limited licenses, expiration must be tracked in monitoring or the asset management system and renewal budgeted for the full support window
-- BMC must operate independently of OS state, including during OS installation, kernel panic, and power-cycle recovery
-- Remote Serial console (SOL), remote GUI console (GUI/VNC or equivalent), remote firmware update, remote BIOS/UEFI configuration
-- Ability to monitor power supply state/consumption
-- Ability to view fan speed
-- Ability to view system temperatures
-- IPMI over LAN (`lanplus`)
-- Redfish 1.20 or newer, Redfish schema 2023.3 or newer
-- BMC configuration (users, network, BIOS settings) must be fully exportable and importable via Redfish
-- Dedicated physical BMC network port, connected to an isolated out-of-band management network (separate VLAN or physical network)
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
+| SLAM-2026-BMC-01 | MUST | All BMC features (remote console, virtual media, Redfish, firmware update) are included with perpetual licenses at procurement. No capability tiers | Quote |
+| SLAM-2026-BMC-02 | MUST | Where a vendor only offers time-limited licenses, expiration is tracked in monitoring or the asset management system and renewal is budgeted for the full support window | Asset record |
+| SLAM-2026-BMC-03 | MUST | BMC operates independently of OS state, including during OS installation, kernel panic, and power-cycle recovery | Test |
+| SLAM-2026-BMC-04 | MUST | Remote serial console (SOL) | `ipmitool sol activate`; Redfish `SerialConsole` |
+| SLAM-2026-BMC-05 | MUST | Remote graphical console (HTML5/VNC or equivalent) | Test |
+| SLAM-2026-BMC-06 | MUST | Remote firmware update and remote BIOS/UEFI configuration | Redfish `UpdateService`, `Bios`, Web UI |
+| SLAM-2026-BMC-07 | MUST | Power supply state and consumption are readable | Redfish `/Chassis/*/Power`; `ipmitool sdr` |
+| SLAM-2026-BMC-08 | MUST | Fan speeds are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Fan` |
+| SLAM-2026-BMC-09 | MUST | System temperatures are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Temperature` |
+| SLAM-2026-BMC-10 | MUST | IPMI over LAN (`lanplus`) | `ipmitool -I lanplus ... chassis status` |
+| SLAM-2026-BMC-11 | MUST | Redfish 1.20 or newer, Redfish schema 2023.3 or newer | `GET /redfish/v1` (`RedfishVersion`) |
+| SLAM-2026-BMC-12 | MUST | BMC configuration (users, network, BIOS settings) is fully exportable and importable via Redfish | Test export/import |
+| SLAM-2026-BMC-13 | MUST | Dedicated physical BMC network port, connected to an isolated out-of-band management network (separate VLAN or physical network) | Physical inspection |
+
+### Rationale
+
+The BMC is the only path to a node whose OS is down, and on remote sites
+it substitutes for a person at the console. License-gated features
+discovered during an outage are unacceptable. Redfish is the automation
+interface; IPMI is retained for legacy tooling. Exportable configuration
+is what makes a batch of nodes reproducible and a replacement node
+identical to the one it replaces.
+
+Out of band firmware updates provide the ability to update the system without
+physical access.
 
 ---
 
 ## Open Questions
 
-- Minimum vendor support tier (Serviceability): next-business-day on-site vs. depot return - likely varies by installation geography
-- GPU vendor policy beyond NVIDIA `nvidia-open` (GPU)
-- NVMe hot-swap requirement - currently required for RAID arrays only; should it extend to single NVMe devices?
+| ID | Question | Section |
+|---|---|---|
+| SLAM-2026-OQ-01 | Minimum vendor support tier: next-business-day on-site vs. depot return. Likely varies by installation geography | Serviceability |
+| SLAM-2026-OQ-02 | GPU vendor policy beyond NVIDIA `nvidia-open` | GPU |
+| SLAM-2026-OQ-03 | NVMe hot-swap is currently required for RAID arrays only. Should it extend to single NVMe devices? | Storage |
 
 ---
 
@@ -177,3 +364,7 @@ The TPM must have full Linux support.
 - BMC credential management database
 - BMC license database
 - Zero-trust infrastructure expansion
+- Procurement compliance matrix and delivery acceptance checklist derived
+  from the requirement tables above
+
+---
