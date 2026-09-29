@@ -66,20 +66,29 @@ Detailed acceptance procedures will be provided in a separate checklist.
 
 ### Rationale
 
-- **VROC** is firmware-assisted software RAID tied to Intel platform
-  firmware and a hardware license key. It adds a vendor-specific layer on
-  top of `mdadm` (IMSM metadata) without adding value over plain `mdadm`,
-  and the array becomes dependent on a specific motherboard generation.
-- **No DOS or Windows for firmware updates**: all update paths must work
-  from Linux or the BMC on an air-gapped network.
-- **No shared backplanes**: chassis midplanes and chassis managers are a
-  shared failure domain and a shared lifecycle. A node's service life
-  should not be bounded by an enclosure's.
-- **Air gap**: many installations have no external route. Any component
-  that "phones home" for licensing, activation, or updates will fail.
-- **No prototypes / no near-EOL**: service life requires a spares
-  pipeline and a support contract that a prototype or EOL part
-  cannot provide.
+- **No VROC (PROH-01)**: VROC is `mdadm` software RAID with Intel IMSM
+  metadata, gated by platform firmware and a hardware license key. It
+  offers nothing over plain `mdadm` and ties the array to a specific
+  motherboard generation, so a board replacement can strand the data.
+- **No unsupported NVIDIA GPUs (PROH-02)**: see the GPU rationale
+  (GPU-01).
+- **No DOS or Windows for firmware updates (PROH-03)**: nodes are
+  Linux-only and often air-gapped. An update path that needs another OS
+  is an update path that will not be exercised, leaving known firmware
+  defects in place for the service life.
+- **No shared backplanes (PROH-04)**: a chassis midplane or chassis
+  manager is a shared failure domain and a shared lifecycle. One fault
+  can take down every node in the enclosure, and every node is retired
+  when the enclosure is.
+- **No internet dependency (PROH-05)**: many installations have no
+  external route. Any component that requires licensing, activation, or
+  update servers to function will fail there, possibly long after
+  acceptance.
+- **No prototypes, no near-EOL parts (PROH-06, PROH-07)**: a 10-year
+  service life needs a spares pipeline, firmware updates, and a support
+  contract. Prototypes have none of these; parts nearing end of life
+  lose them early. The 18-month window gives time to reach steady-state
+  operation before the vendor stops shipping replacements.
 
 ---
 
@@ -111,18 +120,45 @@ Hardware TPM requirements are in the Hardware TPM v2 section
 
 ### Rationale
 
-- `x86_64-v3` is the floor for current RHEL builds and gives headroom for
-  the service life.
-- SMT must be present and switchable because some DAQ workloads need
-  it off for latency determinism while others benefit from it.
-- ECC and correct NUMA reporting are needed for reliable long-running systems and
-  for pinning DAQ processes.
-- The RHEL HCL requirement is what makes the vendor support contract and
-  Red Hat support usable together.
-- A hardware watchdog is the only recovery path for a hung kernel on a
-  remote site when nobody is present to power-cycle the node.
-- Balanced DIMM population preserves memory bandwidth and the NUMA/channel
-  behavior that DAQ workloads expect.
+- **`x86_64-v3` (PLAT-01)**: RHEL 10 is built for `x86-64-v3` and will
+  not boot on older CPUs. A system that only meets the RHEL 9 baseline
+  (`x86-64-v2`) is capped at RHEL 9 and cannot follow the fleet through
+  the next major version. `aarch64` is the approved alternative when a
+  workload requires it.
+- **SMT switchable (PLAT-02)**: some DAQ workloads need SMT off for
+  latency determinism; others gain throughput from it. The choice must
+  be made per system in firmware, not fixed by the hardware.
+- **ECC present and reporting (PLAT-03, PLAT-04)**: ECC corrects
+  single-bit errors, but without functional EDAC reporting a DIMM that
+  is degrading is invisible until it produces an uncorrectable error.
+  Reporting turns a crash into a scheduled DIMM swap.
+- **Correct NUMA topology (PLAT-05)**: DAQ processes and NIC interrupts
+  are pinned to the node that owns their memory and PCIe root. If the
+  firmware misreports topology, pinning is silently wrong and
+  performance is unpredictable.
+- **UEFI and Secure Boot (PLAT-06, PLAT-07)**: UEFI is the prerequisite
+  for capsule firmware updates (FW-02), Secure Boot key management
+  (FW-06, FW-07), and TPM measured boot (TPM section). Legacy BIOS boot
+  offers none of these.
+- **Virtualization and IOMMU (PLAT-08, PLAT-09)**: VMs and containers
+  isolate DAQ components from each other and from the host. The IOMMU
+  is required for safe PCIe device passthrough and for SR-IOV (NET-11),
+  and protects the host from DMA by misbehaving devices.
+- **RHEL HCL and configuration limits (PLAT-10, PLAT-11)**: Red Hat
+  support is conditional on certified hardware within documented
+  limits. Meeting both keeps the vendor contract and the Red Hat
+  subscription usable together when a fault has to be escalated.
+- **USB ports and local console (PLAT-12, PLAT-13)**: when network,
+  BMC, or boot storage has failed, installation from USB media with a
+  crash cart (SERV-04, SERV-05) is the last recovery path. Two ports
+  allow a keyboard and install media at the same time.
+- **Hardware watchdog (PLAT-14)**: a hung kernel on a remote site with
+  no one present cannot be power-cycled by hand. An in-tree watchdog
+  driven by `systemd` is the only automatic recovery path.
+- **Balanced DIMM population (PLAT-15)**: unbalanced channels reduce
+  memory bandwidth and can change interleaving behavior between
+  otherwise identical nodes, producing performance differences that
+  are hard to diagnose.
 
 ---
 
@@ -137,24 +173,39 @@ Hardware TPM requirements are in the Hardware TPM v2 section
 | SLAM-2026-SERV-05 | MUST | Each installation maintains a crash cart (monitor supporting all video interfaces, keyboard, mouse, required cables) usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner. One crash cart is required for every two physical racks of systems | Installation review |
 | SLAM-2026-SERV-06 | MAY | A rack mount KVM replaces a crash cart under SLAM-2026-SERV-05, provided a KVM is in every rack the crash cart would service and its cables reach all servers in neighboring racks | Installation review |
 | SLAM-2026-SERV-07 | MUST | Each installation has at least one mobile crash cart regardless of SLAM-2026-SERV-06 | Installation review |
-| SLAM-2026-SERV-08 | MUST | A vendor hardware support contract covering repair/replacement, firmware update availablility, and support escalation is in place for the node's operational lifetime | Quote; contract |
+| SLAM-2026-SERV-08 | MUST | A vendor hardware support contract covering repair/replacement, firmware update availability, and support escalation is in place for the node's operational lifetime | Quote; contract |
 | SLAM-2026-SERV-09 | MUST | The chassis serial number matches across the physical label, `dmidecode -s system-serial-number`, and Redfish `/Systems/*` | Physical inspection; `dmidecode`; Redfish `GET /redfish/v1/Systems/*` |
 
 Minimum hardware support tier is an open question (see SLAM-2026-OQ-01).
 
 ### Rationale
 
-Installations are often remote with limited on-site staff. A node that
-can be pulled and worked on without touching its neighbors, using tools
-and a console that are already present, keeps repair time short and
-avoids collateral downtime. VGA is preferred because crash carts and rack
-KVMs are overwhelmingly VGA.
-
-A rack KVM covers the common case; the mobile cart covers the KVM itself
-failing and nodes outside KVM cable reach.
-
-Consistent serial numbers across the label, DMI, and Redfish are required
-for asset tracking, automated inventory, and support contracts .
+- **Independent removal (SERV-01)**: repairing one node must not take
+  down its neighbors. Shared power strips, shared uplinks, or cabling
+  routed across other nodes turn a single repair into a multi-node
+  outage.
+- **Rails and standard tools (SERV-02, SERV-03)**: installations are
+  remote with limited on-site staff. A node that slides out on rails and
+  opens with a screwdriver can be serviced by whoever is present; one
+  needing a lift or a vendor-specific tool waits for a site visit.
+- **VGA console (SERV-04)**: crash carts and rack KVMs are overwhelmingly
+  VGA. HDMI or DisplayPort is only acceptable when a matching monitor
+  and cables are guaranteed to be at the rack, because a console with no
+  matching display is no console.
+- **Crash cart coverage (SERV-05, SERV-06, SERV-07)**: one cart per two
+  racks keeps a console within reach of every node. A rack KVM may
+  substitute for the common case, but the mobile cart is still required
+  because the KVM itself can fail and cables do not reach nodes in
+  neighboring racks.
+- **Support contract (SERV-08)**: the contract is what provides
+  replacement parts, firmware updates, and an escalation path for the
+  full service life. Without it a hardware fault becomes a procurement
+  exercise.
+- **Consistent serial numbers (SERV-09)**: the physical label, DMI, and
+  Redfish are the three places a serial number is read: by a technician,
+  by the OS inventory, and by out-of-band automation. If they disagree,
+  asset records and support-contract claims cannot be matched to the
+  node in the rack.
 
 ---
 
@@ -170,8 +221,11 @@ SLAM-2026-BMC-08.
 
 ### Rationale
 
-PSU failure is the most common field repair. Redundant, hot-swap,
-monitored supplies turn it from an outage into a scheduled swap.
+- **Redundant, hot-swap PSUs (PWR-01, PWR-02)**: PSU failure is the
+  most common field repair. With N+1 redundancy the node keeps running
+  on the remaining supply; with hot-swap the replacement is a scheduled
+  visit rather than a shutdown. Monitoring through the BMC (BMC-08) is
+  what makes the failure visible before the second supply fails.
 
 ---
 
@@ -185,13 +239,13 @@ monitored supplies turn it from an outage into a scheduled swap.
 | SLAM-2026-STOR-02 | MUST | Per-drive health and wear is readable from Linux for every drive type | `smartctl --scan-open`; `nvme list`; `nvme smart-log` |
 | SLAM-2026-STOR-03 | MUST | Per-drive health and wear is readable for drives behind RAID controllers | `smartctl -a -d megaraid,N /dev/sdX` |
 | SLAM-2026-STOR-04 | MUST NOT | Use RAID controllers that obscure per-drive SMART data | Quote; `smartctl --scan-open`; `storcli /c0 show` |
-| SLAM-2026-STOR-05 | SHOULD | SSDs provide power-loss protection for in-flight writes | Vendor datasheet; `smartctl -a` (PLP/Power Loss Protection field) |
+| SLAM-2026-STOR-05 | MUST | SSDs provide power-loss protection for in-flight writes | Vendor datasheet; `smartctl -a` (PLP/Power Loss Protection field) |
 
 ### HDD and SATA SSD
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-STOR-06 | MUST | Broadcom-based hardware RAID controller with battery or capacitor-backed write cache | Quote; `storcli /c0 show` |
+| SLAM-2026-STOR-06 | MUST | Broadcom-based hardware RAID controller with a write cache that survives power loss and requires no scheduled replacement over the node's service life | Quote; `storcli /c0 show` |
 | SLAM-2026-STOR-07 | MUST | RAID1 or RAID10 for redundant arrays. RAID5 or RAID6 MAY be used only when capacity matters more than performance and rebuild time | `storcli /c0 /vall show` |
 
 ### NVMe
@@ -235,29 +289,63 @@ SLAM-2026-STOR-15.
 
 ### Rationale
 
-- **Per-drive SMART**: wear and pre-failure indicators are the only
-  warning before a rebuild. A controller that hides them removes the
-  warning.
-- **SSD power-loss protection**: prevents data corruption from PSU failure
-  or unexpected power events, reducing the need for on-site recovery.
-- **NVMe in pairs**: RAID1/RAID10 needs an even member count. Buying in
-  pairs keeps the RAID path open even when a system is initially
-  deployed with raw devices.
-- **`mdadm` for NVMe**: matches native NVMe performance for RAID1/RAID10,
-  is monitored by the kernel and standard tooling, and has no vendor
-  dependency. Hardware RAID is allowed where the controller is fully
-  covered by SLAM-2026-STOR-13.
-- **Broadcom for Hardware RAID**: standardization. One controller family
-  and one toolset across all installations means one set of monitoring
-  scripts, one spares pool, and one runbook.
-- **RAID1/10 default**: rebuild time on large RAID5/6 arrays is a
-  multi-day exposure window on a system with no on-site staff.
-- **Data volumes on RAID**: experiment and DAQ data must survive a single
-  drive failure without on-site intervention.
-- **NVMe hot-swap**: a failed NVMe drive should be replaceable without
-  removing the node from service. Non-hot-swap form factors such as M.2
-  require explicit justification because they make replacement a chassis
-  service event.
+- **Hot-swap RAID bays (STOR-01)**: the point of RAID is to survive a
+  drive failure without downtime. If replacing the failed member
+  requires powering off the node, the downtime has only been deferred.
+- **Per-drive SMART, including behind RAID (STOR-02, STOR-03,
+  STOR-04)**: wear and pre-failure indicators are the only warning
+  before a drive drops out and a rebuild starts. A controller that hides
+  them removes the warning and turns every failure into a surprise.
+- **Power-loss protection (STOR-05, STOR-06)**: there are two volatile
+  write caches between the OS and the media, and each needs its own
+  protection.
+  - SSDs buffer writes in on-drive DRAM. Only on-drive PLP (capacitors
+    that flush DRAM to NAND on power loss) protects that data. A RAID
+    controller's protected cache does not cover it, and under `mdadm`
+    NVMe there is no controller at all, so PLP is required on every SSD.
+  - HDDs have no PLP equivalent. Behind hardware RAID, the protection is
+    the controller's protected write cache, with the drive's own
+    volatile cache left disabled so that the controller cache is the
+    only volatile stage. Broadcom controllers default to this when their
+    cache is protected; `storcli /c0 /vall show` reports it as
+    `Disk Cache Policy`.
+  - The "no scheduled replacement" clause excludes battery-only cache
+    protection. A battery is a consumable with a 2-3 year life, and when
+    it fails the controller silently falls back to write-through: a
+    performance drop nobody sees and a maintenance visit nobody makes on
+    a remote site. Capacitor-backed flash cache (Broadcom CacheVault and
+    equivalents) meets the requirement without a maintenance item.
+- **RAID1/RAID10 default (STOR-07)**: a RAID5/6 rebuild on large drives
+  is a multi-day window in which a second failure loses the array, on a
+  system with no on-site staff. Mirrors rebuild in hours and are the
+  default; parity RAID is reserved for cases where capacity outweighs
+  that exposure.
+- **NVMe configuration (STOR-08, STOR-10)**: the allowed configurations
+  are the ones standard RHEL tooling manages and monitors. RAID is the
+  expected choice; raw or LVM-on-raw is permitted for workloads that
+  provide redundancy elsewhere, but the justification must be recorded
+  so it is not mistaken for an oversight later.
+- **NVMe in pairs (STOR-09)**: RAID1/RAID10 needs an even member count.
+  Buying in pairs keeps the RAID path open even when a system is
+  initially deployed with raw devices.
+- **`mdadm` for NVMe (STOR-11)**: `mdadm` RAID1/RAID10 matches native
+  NVMe performance, is monitored by the kernel and standard tooling, and
+  has no vendor dependency. Hardware RAID is allowed only where the
+  controller is fully covered by STOR-13.
+- **NVMe hot-swap bays (STOR-12)**: a failed U.2/U.3 drive is replaced
+  from the front of the chassis. M.2 requires opening the node, which
+  makes the replacement a chassis service event and usually a shutdown.
+- **Broadcom, one toolset (STOR-06, STOR-13)**: one controller family
+  and one management tool across all installations means one set of
+  monitoring scripts, one spares pool, and one runbook. A controller
+  that cannot be managed from Linux cannot be monitored or repaired
+  remotely.
+- **System volume (STOR-14, STOR-15)**: 256 GB leaves room for several
+  installed kernels, crash dumps, logs, and an in-place major-version
+  upgrade. Placing the OS on RAID means a single boot-drive failure does
+  not take the node offline.
+- **Data volumes on RAID (STOR-16)**: experiment and DAQ data must
+  survive a single drive failure without on-site intervention.
 
 ---
 
@@ -282,20 +370,38 @@ SLAM-2026-STOR-15.
 
 ### Rationale
 
-Onboard copper is the lowest-variance option across a 10-year refresh
-cycle of facility switches. In-tree drivers are what allow the same
-hardware to move across RHEL major versions without vendor DKMS packages.
-
-SR-IOV, RoCE v2, DPDK, and PTP hardware timestamping are baseline for
-DAQ data paths. The facility interface carries management and provisioning
-traffic and does not need them; requiring them there would exclude most
-onboard 10GBase-T controllers.
-
-LLDP visibility from the OS is how cabling and VLAN errors are caught
-during commissioning and audited later.
-
-Dual-stack PXE/HTTP boot is required because the provisioning network
-is IPv6-capable and firmware implementations vary.
+- **Onboard copper for the facility interface (NET-01)**: RJ45 is the
+  lowest-variance option across a 10-year refresh cycle of facility
+  switches. Optics introduce transceiver compatibility, cleaning, and
+  spares issues that copper does not have.
+- **In-tree, non-deprecated driver on the HCL (NET-02, NET-03)**: an
+  in-tree driver is what lets the same NIC move across RHEL major
+  versions without vendor DKMS packages. A driver on the deprecated list
+  will be absent from the next major version, stranding the hardware.
+- **Pre-approved NIC vendors (NET-04)**: Intel, QLogic, Mellanox, and
+  Broadcom have a long history of upstream, in-tree drivers and
+  multi-generation firmware support. Other vendors may be equally good
+  but must be evaluated against that standard before purchase.
+- **NUMA affinity and interrupt topology (NET-05)**: DAQ data paths pin
+  receive queues and consumers to the NUMA node that owns the NIC's PCIe
+  root. If the NIC misreports its node, that pinning is wrong and packet
+  processing crosses the interconnect on every packet.
+- **LLDP visible to the OS (NET-06, NET-07)**: `lldpd` output is how
+  cabling and VLAN errors are caught at commissioning and audited later.
+  Some NIC firmware runs its own LLDP agent that consumes the frames
+  before the OS sees them; it must be disableable and stay disabled, or
+  the OS view is silently empty.
+- **Dual-stack PXE and UEFI HTTP boot (NET-08, NET-09, NET-10)**: the
+  provisioning network is IPv6-capable and unattended reinstall is the
+  primary recovery method. UEFI HTTP boot implementations vary in how
+  they handle dual-stack, so the specific firmware is tested rather than
+  assumed.
+- **DAQ data-path features (NET-11, NET-12, NET-13, NET-14)**: SR-IOV,
+  RoCE v2, an upstream DPDK driver, and PTP hardware timestamping are
+  the baseline DAQ data-path toolkit. They are required only on add-in
+  data-path NICs; the facility interface carries management and
+  provisioning traffic and does not need them. Requiring them there
+  would exclude most onboard 10GBase-T controllers.
 
 ---
 
@@ -313,9 +419,13 @@ GPU vendor policy beyond NVIDIA is an open question (see SLAM-2026-OQ-02).
 
 ### Rationale
 
-The proprietary NVIDIA kernel modules are out-of-tree and lag kernel
-releases. Requiring GPUs supported by the open modules keeps the GPU
-stack buildable across the 3+ RHEL major versions in service at any time.
+- **`nvidia-open` supported GPUs only (GPU-01, PROH-02)**: the
+  proprietary NVIDIA kernel modules are closed source, out of tree, and
+  lag kernel releases. The open modules can be rebuilt against any
+  kernel and patched locally. Restricting purchases to GPUs the open
+  modules support keeps the GPU stack buildable across the 3+ RHEL major
+  versions in service at any time and removes dependence on NVIDIA
+  continuing to ship a proprietary build for an aging GPU.
 
 ---
 
@@ -334,20 +444,40 @@ stack buildable across the 3+ RHEL major versions in service at any time.
 
 ### Rationale
 
-Firmware is the one component that cannot be replaced by reinstalling
-the OS.
+Firmware is the one component that cannot be fixed by reinstalling the
+OS. Over a 10-year service life it will need updates for security (`dbx`
+revocations, Secure Boot CA rotation), for hardware defects, and for
+compatibility with newer RHEL releases. Every requirement below exists so
+that those updates can be applied, and reversed, from Linux or the BMC
+on an air-gapped network with nobody on site.
 
-LVFS uses a registry of hardware to locate a UEFI Firmware Capsule for
-hardware in a similar method to software updates.
-
-Over the years of runtime it will need updating for security (dbx, Secure
-Boot CA rotation) and for compatibility with newer RHEL releases.
-
-Every update path must work from Linux or the BMC on an air-gapped network.
-
-Downgrade/rollback is required because an update may break compatibility
-with an installed RHEL release or DAQ firmware; remote sites need a way
-back without physical intervention.
+- **LVFS / `fwupd` (FW-01)**: `fwupd` is distribution-bundled and treats
+  firmware like any other package: the LVFS catalog maps hardware IDs to
+  capsule files, and updates are applied with the same tooling and
+  automation as OS updates. Vendors that publish to LVFS remove the need
+  for a vendor-specific update utility. LVFS content can be mirrored for
+  air-gapped sites.
+- **UEFI capsule updates (FW-02)**: the capsule is the standardized
+  delivery format that both `fwupd` and Redfish `UpdateService` consume.
+  Without capsule support, each component needs its own update
+  mechanism.
+- **Update paths (FW-03, FW-04, FW-05)**: at least one path must work
+  from Linux or the BMC so that updates never require a site visit or
+  another operating system (PROH-03, PROH-05). Redfish is required
+  because it is the path that works when the OS is down and is the one
+  that fleet automation drives. Standardized tooling is required so that
+  a mandated update can be rolled out uniformly rather than one vendor
+  utility at a time.
+- **Secure Boot key management (FW-06, FW-07)**: `dbx` revocations and
+  KEK/CA rotations are issued over the service life and must be applied
+  from Linux via `fwupd`. Owner-enrolled `db` keys and MOK allow locally
+  built kernels and out-of-tree modules to boot with Secure Boot on,
+  which is the only way to keep Secure Boot enabled across the full
+  fleet without depending on a third-party signing service.
+- **Downgrade / rollback (FW-08)**: a firmware update can break
+  compatibility with an installed RHEL release or with DAQ hardware
+  firmware. Remote sites need a way back that does not require a
+  technician with a programmer.
 
 ---
 
@@ -374,22 +504,48 @@ back without physical intervention.
 
 ### Rationale
 
-The BMC is the only path to a node whose OS is down, and on remote sites
-it substitutes for a person at the console. License-gated features
-discovered during an outage are unacceptable. Redfish is the automation
-interface; IPMI is retained for legacy tooling. Exportable configuration
-is what makes a batch of nodes reproducible and a replacement node
-identical to the one it replaces.
+The BMC is the only path to a node whose OS is down. On a remote site it
+substitutes for a person at the console.
 
-Out-of-band firmware updates provide the ability to update the system
-without physical access.
-
-Serial console redirection extends SOL coverage to firmware setup and
-early boot, which is essential when no one is on site to use a crash
-cart.
-
-Redfish boot-order control is needed for automated provisioning and
-recovery without physical presence.
+- **Perpetual licenses, no tiers (BMC-01, BMC-02)**: a feature that is
+  license-gated is a feature that may be discovered missing during an
+  outage, years after purchase, when the vendor portal is unreachable
+  from the air-gapped site. Where a time-limited license is unavoidable,
+  its expiry must be tracked and budgeted like any other support item so
+  it does not lapse silently.
+- **Independent of OS state (BMC-03)**: the BMC exists for the moments
+  the OS is unavailable: installation, kernel panic, power-cycle
+  recovery. A BMC that depends on a host agent or host power state fails
+  exactly when it is needed.
+- **Serial, graphical, and firmware-stage console (BMC-04, BMC-05,
+  BMC-15)**: SOL covers the kernel console and text-mode recovery;
+  the graphical console covers installers and firmware UIs; BIOS serial
+  redirection extends SOL back into POST and firmware setup. Together
+  they replace the crash cart for everything except a physical swap.
+- **Remote firmware, BIOS, and boot-order control (BMC-06, BMC-07,
+  BMC-16)**: these three operations are what unattended provisioning
+  and recovery consist of: set the firmware configuration, point the
+  node at network boot, reinstall. Any of them requiring physical
+  presence turns a remote reinstall into a site visit.
+- **Power, fan, and temperature telemetry (BMC-08, BMC-09, BMC-10)**:
+  PSU, fan, and cooling failures are the common hardware faults, and all
+  three give warning before they become outages if the readings are
+  collected. Reading them out of band means they are still available
+  when the OS is down or when the OS has no vendor sensor driver.
+- **IPMI and Redfish (BMC-11, BMC-12)**: Redfish is the automation
+  interface and the one with a versioned schema; the minimum version
+  pins the feature set that the fleet tooling depends on. IPMI over LAN
+  is retained because existing tooling and SOL workflows use it.
+  Disabling IPMI when unused is an open question (OQ-03).
+- **Exportable configuration (BMC-13)**: a BMC configuration that can be
+  exported and re-imported via Redfish is what makes a batch of nodes
+  reproducible, and a replacement node identical to the one it replaces,
+  without hand-entry through a web UI.
+- **Dedicated, isolated management port (BMC-14)**: the BMC is the most
+  privileged interface on the node and has its own firmware, network
+  stack, and vulnerability history. A dedicated port on an isolated
+  network keeps it off the data and facility networks and leaves it
+  reachable when those networks are misconfigured.
 
 ---
 
@@ -408,7 +564,32 @@ recovery without physical presence.
 
 Intended uses are encrypted-at-rest storage, secret-zero bootstrapping,
 and zero-trust identity anchoring. All three depend on a TPM that Linux
-can drive fully and whose EK can be validated without an external route.
+can drive fully and whose identity can be validated without an external
+route.
+
+- **TPM 2.0 present (TPM-01)**: TPM 1.2 lacks the algorithm agility and
+  the tooling support required below. The physical form (discrete,
+  firmware, or integrated) does not matter as long as the remaining
+  requirements are met.
+- **In-tree driver, `/dev/tpmrm0` (TPM-02)**: the resource-manager
+  device lets `systemd`, `clevis`, and application software share the
+  TPM without coordinating sessions. An in-tree driver keeps it working
+  across RHEL major versions without vendor packages.
+- **SHA-256 PCR bank (TPM-03)**: SHA-256 is the PCR bank that RHEL
+  measured boot, `systemd-pcrlock`, and attestation tooling use. A TPM
+  with only a SHA-1 bank cannot participate in current attestation
+  policies.
+- **Full `tpm2-tools` / TPM2-TSS support (TPM-04)**: the
+  distribution-bundled stack is the only one that will be maintained
+  over the service life. A TPM that needs a vendor library for any
+  operation cannot be relied on after that library is abandoned.
+- **EK certificate and attestation (TPM-05, TPM-06)**: the endorsement
+  key certificate is how a remote party confirms it is talking to a
+  genuine TPM in a specific node. Some vendors ship the certificate on
+  the chip; others require retrieval from vendor infrastructure. The
+  behavior must be documented per vendor so that enrollment can be
+  planned, and retrieval must never require the node itself to reach the
+  internet (PROH-05).
 
 ---
 
