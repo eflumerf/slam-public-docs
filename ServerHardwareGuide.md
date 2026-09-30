@@ -229,8 +229,8 @@ SLAM-2026-BMC-08.
 
 ### Rationale
 
-- **Redundant, hot-swap PSUs (PWR-01, PWR-02)**: PSU failure is the
-  most common field repair. With N+1 redundancy the node keeps running
+- **Redundant, hot-swap PSUs (PWR-01, PWR-02)**: PSU failure is a
+  common field repair. With N+1 redundancy the node keeps running
   on the remaining supply; with hot-swap the replacement is a scheduled
   visit rather than a shutdown. Monitoring through the BMC (BMC-08) is
   what makes the failure visible before the second supply fails.
