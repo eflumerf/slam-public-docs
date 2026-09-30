@@ -65,7 +65,7 @@ operational risk across the service life.
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-PROH-01 | MUST NOT | Use Intel VROC, even if present in firmware | BIOS settings (VROC/RSTe disabled); `mdadm --detail-platform`; no `imsm` container in `/proc/mdstat` |
-| SLAM-2026-PROH-02 | MUST NOT | Include NVIDIA GPUs unsupported by the `nvidia-open` kernel modules | Quote; `lspci -nn` |
+| SLAM-2026-PROH-02 | MUST NOT | Include NVIDIA GPUs unsupported by the `nvidia-open` kernel module | Quote; `lspci -nn` |
 | SLAM-2026-PROH-03 | MUST NOT | Depend on DOS or Windows for any firmware update of any component | Vendor documentation |
 | SLAM-2026-PROH-04 | MUST NOT | Use shared-backplane enclosures (blade chassis, shared midplanes). Each node must occupy its own independent chassis | Quote |
 | SLAM-2026-PROH-05 | MUST NOT | Depend on internet access for any component function. All components must operate on an air-gapped network without an external route | Quote; vendor documentation |
