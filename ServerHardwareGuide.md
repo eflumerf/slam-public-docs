@@ -69,7 +69,7 @@ operational risk across the service life.
 | SLAM-2026-PROH-03 | MUST NOT | Depend on DOS or Windows for any firmware update of any component | Vendor documentation |
 | SLAM-2026-PROH-04 | MUST NOT | Use shared-backplane enclosures (blade chassis, shared midplanes). Each node must occupy its own independent chassis | Quote |
 | SLAM-2026-PROH-05 | MUST NOT | Depend on internet access for any component function. All components must operate on an air-gapped network without an external route | Quote; vendor documentation |
-| SLAM-2026-PROH-06 | MUST NOT | Procure prototypes or products not part of a standard production line without prior approval | Quote |
+| SLAM-2026-PROH-06 | MUST NOT | Procure prototypes or products not part of a standard production line | Quote |
 | SLAM-2026-PROH-07 | MUST NOT | Procure any hardware component that is end of life at purchase time, or with an announced end of life within 18 months of purchase | Quote; vendor lifecycle notice |
 
 ### Rationale
@@ -262,7 +262,7 @@ SLAM-2026-BMC-08.
 |---|---|---|---|
 | SLAM-2026-STOR-08 | MUST | NVMe is configured as one of: `mdadm` software RAID, hardware RAID (controller supported per SLAM-2026-STOR-13), LVM on raw devices, or raw devices | `lsblk` |
 | SLAM-2026-STOR-09 | MUST | NVMe drives are installed in pairs | Quote; `lsblk` |
-| SLAM-2026-STOR-10 | MUST | RAID is the expected NVMe configuration; raw or LVM-on-raw devices require justification in the procurement request | Quote; `lsblk` |
+| SLAM-2026-STOR-10 | MUST | RAID is the expected NVMe configuration | Quote; `lsblk` |
 | SLAM-2026-STOR-11 | SHOULD | `mdadm` is used for NVMe RAID1/RAID10 | `cat /proc/mdstat` |
 | SLAM-2026-STOR-12 | SHOULD | NVMe drives are installed in hot-swappable bays (e.g. U.2, U.3). Non-hot-swap form factors such as M.2 require justification in the procurement request | Quote; physical inspection |
 
@@ -338,7 +338,7 @@ meet the workload requirements.
 - **NVMe configuration (STOR-08, STOR-10)**: the allowed configurations
   are the ones standard RHEL tooling manages and monitors. RAID is the
   expected choice; raw or LVM-on-raw is permitted for workloads that
-  provide redundancy elsewhere, but the justification must be recorded
+  provide redundancy elsewhere, but the exception must be recorded
   so it is not mistaken for an oversight later.
 - **NVMe in pairs (STOR-09)**: RAID1/RAID10 needs an even member count.
   Buying in pairs keeps the RAID path open even when a system is
@@ -377,7 +377,7 @@ administration, or facility traffic.
 | SLAM-2026-NET-01 | SHOULD | Onboard RJ45 Ethernet for the primary facility network interface. Optical or external network cards must justify their use | Quote; `ethtool <if>` (Port: Twisted Pair) |
 | SLAM-2026-NET-02 | MUST | NIC has an in-tree driver in the current RHEL kernel that is not on the RHEL deprecated-driver list | `ethtool -i <if>`; RHEL release notes (deprecated devices) |
 | SLAM-2026-NET-03 | MUST | NIC appears on the RHEL HCL | Quote; catalog lookup |
-| SLAM-2026-NET-04 | MUST | Intel, QLogic, Mellanox, and Broadcom NICs are pre-approved; other vendors require approval before procurement | Quote |
+| SLAM-2026-NET-04 | MUST | Intel, QLogic, Mellanox, and Broadcom NICs are pre-approved vendors | Quote |
 | SLAM-2026-NET-05 | MUST | NICs expose correct NUMA affinity and interrupt topology to the OS where relevant | `cat /sys/class/net/<if>/device/numa_node`; `/proc/interrupts` |
 | SLAM-2026-NET-06 | MUST | LLDP frames reach the OS so that `lldpd`/`lldpad` can see the switch neighbour (chassis ID, port ID, VLAN) | `lldpcli show neighbors` |
 | SLAM-2026-NET-07 | MUST | NIC firmware LLDP agents (e.g. Intel `fw-lldp-agent`) that consume LLDP frames before the OS are disableable and remain disabled across reboots | `ethtool --show-priv-flags <if>`; `lldpcli show neighbors` after reboot |
