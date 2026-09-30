@@ -149,7 +149,7 @@ Hardware TPM requirements are in the Hardware TPM v2 section.
   offers none of these.
 - **Virtualization and IOMMU (PLAT-08, PLAT-09)**: VMs and containers
   isolate DAQ components from each other and from the host. The IOMMU
-  is required for safe PCIe device passthrough and for SR-IOV (NET-11),
+  is required for safe PCIe device passthrough and for SR-IOV (NET-12),
   and protects the host from DMA by misbehaving devices.
 - **RHEL HCL and configuration limits (PLAT-10, PLAT-11)**: Red Hat
   support is conditional on certified hardware within documented
@@ -376,15 +376,16 @@ administration, or facility traffic.
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-NET-01 | SHOULD | Onboard RJ45 Ethernet for the primary facility network interface. Optical or external network cards must justify their use | Quote; `ethtool <if>` (Port: Twisted Pair) |
-| SLAM-2026-NET-02 | MUST | NIC has an in-tree driver in the current RHEL kernel that is not on the RHEL deprecated-driver list | `ethtool -i <if>`; RHEL release notes (deprecated devices) |
-| SLAM-2026-NET-03 | MUST | NIC appears on the RHEL HCL | Quote; catalog lookup |
-| SLAM-2026-NET-04 | MUST | Intel, QLogic, Mellanox, and Broadcom NICs are pre-approved vendors | Quote |
-| SLAM-2026-NET-05 | MUST | NICs expose correct NUMA affinity and interrupt topology to the OS where relevant | `cat /sys/class/net/<if>/device/numa_node`; `/proc/interrupts` |
-| SLAM-2026-NET-06 | MUST | LLDP frames reach the OS so that `lldpd`/`lldpad` can see the switch neighbour (chassis ID, port ID, VLAN) | `lldpcli show neighbors` |
-| SLAM-2026-NET-07 | MUST | NIC firmware LLDP agents (e.g. Intel `fw-lldp-agent`) that consume LLDP frames before the OS are disableable and remain disabled across reboots | `ethtool --show-priv-flags <if>`; `lldpcli show neighbors` after reboot |
-| SLAM-2026-NET-08 | MUST | Network boot supports PXE and UEFI HTTP boot over IPv4 | Boot test on facility network |
-| SLAM-2026-NET-09 | MUST | Network boot supports PXE and UEFI HTTP boot over IPv6 | Boot test on facility network |
-| SLAM-2026-NET-10 | MUST | UEFI HTTP boot implementations with dual-stack quirks are validated before deployment | Boot test on facility network |
+| SLAM-2026-NET-02 | MUST | Network interfaces operate at 10 Gbps or faster | Quote; `ethtool <if>` |
+| SLAM-2026-NET-03 | MUST | NIC has an in-tree driver in the current RHEL kernel that is not on the RHEL deprecated-driver list | `ethtool -i <if>`; RHEL release notes (deprecated devices) |
+| SLAM-2026-NET-04 | MUST | NIC appears on the RHEL HCL | Quote; catalog lookup |
+| SLAM-2026-NET-05 | MUST | Intel, QLogic, Mellanox, and Broadcom NICs are pre-approved vendors | Quote |
+| SLAM-2026-NET-06 | MUST | NICs expose correct NUMA affinity and interrupt topology to the OS where relevant | `cat /sys/class/net/<if>/device/numa_node`; `/proc/interrupts` |
+| SLAM-2026-NET-07 | MUST | LLDP frames reach the OS so that `lldpd`/`lldpad` can see the switch neighbour (chassis ID, port ID, VLAN) | `lldpcli show neighbors` |
+| SLAM-2026-NET-08 | MUST | NIC firmware LLDP agents (e.g. Intel `fw-lldp-agent`) that consume LLDP frames before the OS are disableable and remain disabled across reboots | `ethtool --show-priv-flags <if>`; `lldpcli show neighbors` after reboot |
+| SLAM-2026-NET-09 | MUST | Network boot supports PXE and UEFI HTTP boot over IPv4 | Boot test on facility network |
+| SLAM-2026-NET-10 | MUST | Network boot supports PXE and UEFI HTTP boot over IPv6 | Boot test on facility network |
+| SLAM-2026-NET-11 | MUST | UEFI HTTP boot implementations with dual-stack quirks are validated before deployment | Boot test on facility network |
 
 ### DAQ Data-Path Networking
 
@@ -398,10 +399,10 @@ required for the DAQ Data-Path interfaces except SLAM-2026-NET-01.
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-NET-11 | MUST | DAQ data-path add-in NICs support SR-IOV | Quote; `lspci -vv` (SR-IOV capability) |
-| SLAM-2026-NET-12 | MUST | DAQ data-path add-in NICs support RoCE v2 | Quote; `rdma link` |
-| SLAM-2026-NET-13 | MUST | DAQ data-path add-in NICs have an upstream DPDK poll-mode driver | Quote; `dpdk-devbind.py -s` |
-| SLAM-2026-NET-14 | MUST | DAQ data-path NICs support PTP hardware timestamping | `ethtool -T <if>` shows hardware transmit and receive timestamping |
+| SLAM-2026-NET-12 | MUST | DAQ data-path add-in NICs support SR-IOV | Quote; `lspci -vv` (SR-IOV capability) |
+| SLAM-2026-NET-13 | MUST | DAQ data-path add-in NICs support RoCE v2 | Quote; `rdma link` |
+| SLAM-2026-NET-14 | MUST | DAQ data-path add-in NICs have an upstream DPDK poll-mode driver | Quote; `dpdk-devbind.py -s` |
+| SLAM-2026-NET-15 | MUST | DAQ data-path NICs support PTP hardware timestamping | `ethtool -T <if>` shows hardware transmit and receive timestamping |
 
 ### Rationale
 
@@ -411,24 +412,28 @@ required for the DAQ Data-Path interfaces except SLAM-2026-NET-01.
   lowest-variance option across a 10-year refresh cycle of facility
   switches. Optics introduce transceiver compatibility, cleaning, and
   spares issues that copper does not have.
-- **In-tree, non-deprecated driver on the HCL (NET-02, NET-03)**: an
+- **Minimum 10G speed (NET-02)**: 10 Gbps is the baseline for server-class
+  provisioning, management, and DAQ traffic. Slower interfaces become a
+  bottleneck for image deployment, log transfer, and recovery operations
+  over a 10-year service life.
+- **In-tree, non-deprecated driver on the HCL (NET-03, NET-04)**: an
   in-tree driver is what lets the same NIC move across RHEL major
   versions without vendor DKMS packages. A driver on the deprecated list
   will be absent from the next major version, stranding the hardware.
-- **Pre-approved NIC vendors (NET-04)**: Intel, QLogic, Mellanox, and
+- **Pre-approved NIC vendors (NET-05)**: Intel, QLogic, Mellanox, and
   Broadcom have a long history of upstream, in-tree drivers and
   multi-generation firmware support. Other vendors may be equally good
   but must be evaluated against that standard before purchase.
-- **NUMA affinity and interrupt topology (NET-05)**: DAQ data paths pin
+- **NUMA affinity and interrupt topology (NET-06)**: DAQ data paths pin
   receive queues and consumers to the NUMA node that owns the NIC's PCIe
   root. If the NIC misreports its node, that pinning is wrong and packet
   processing crosses the interconnect on every packet.
-- **LLDP visible to the OS (NET-06, NET-07)**: `lldpd` output is how
+- **LLDP visible to the OS (NET-07, NET-08)**: `lldpd` output is how
   cabling and VLAN errors are caught at commissioning and audited later.
   Some NIC firmware runs its own LLDP agent that consumes the frames
   before the OS sees them; it must be disableable and stay disabled, or
   the OS view is silently empty.
-- **Dual-stack PXE and UEFI HTTP boot (NET-08, NET-09, NET-10)**: the
+- **Dual-stack PXE and UEFI HTTP boot (NET-09, NET-10, NET-11)**: the
   provisioning network is IPv6-capable and unattended reinstall is the
   primary recovery method. UEFI HTTP boot implementations vary in how
   they handle dual-stack, so the specific firmware is tested rather than
@@ -436,7 +441,7 @@ required for the DAQ Data-Path interfaces except SLAM-2026-NET-01.
 
 **DAQ Data-Path Networking**
 
-- **DAQ data-path features (NET-11, NET-12, NET-13, NET-14)**: SR-IOV,
+- **DAQ data-path features (NET-12, NET-13, NET-14, NET-15)**: SR-IOV,
   RoCE v2, an upstream DPDK driver, and PTP hardware timestamping are
   the baseline DAQ data-path toolkit. They are required only on add-in
   data-path NICs; the facility interface carries management and
