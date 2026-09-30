@@ -116,7 +116,7 @@ operational risk across the service life.
 | SLAM-2026-PLAT-10 | MUST | Listed on the current [RHEL Hardware Compatibility List](https://catalog.redhat.com/hardware) | Quote; catalog lookup |
 | SLAM-2026-PLAT-11 | MUST | CPU and RAM meet RHEL minimums and do not exceed RHEL maximums for the intended configuration | Quote |
 | SLAM-2026-PLAT-12 | MUST | At least 2 unused external USB ports available for installation/crash/recovery | Physical inspection |
-| SLAM-2026-PLAT-13 | MUST | Local video console port (see SLAM-2026-SERV-04) | Physical inspection |
+| SLAM-2026-PLAT-13 | MUST | Local video console port (see SLAM-2026-SERV-06) | Physical inspection |
 | SLAM-2026-PLAT-14 | MUST | Hardware watchdog timer usable from Linux via an in-tree driver and exposed as `/dev/watchdog` or `/dev/watchdogN` | `ls /dev/watchdog*`; `wdctl` |
 | SLAM-2026-PLAT-15 | SHOULD | DIMMs are populated in a balanced configuration across memory channels per CPU vendor guidelines | `dmidecode -t memory`; vendor population guidelines |
 
@@ -158,7 +158,7 @@ Hardware TPM requirements are in the Hardware TPM v2 section
   subscription usable together when a fault has to be escalated.
 - **USB ports and local console (PLAT-12, PLAT-13)**: when network,
   BMC, or boot storage has failed, installation from USB media with a
-  crash cart (SERV-04, SERV-05) is the last recovery path. Two ports
+  crash cart (SERV-06, SERV-07) is the last recovery path. Two ports
   allow a keyboard and install media at the same time.
 - **Hardware watchdog (PLAT-14)**: a hung kernel on a remote site with
   no one present cannot be power-cycled by hand. An in-tree watchdog
@@ -177,12 +177,12 @@ Hardware TPM requirements are in the Hardware TPM v2 section
 | SLAM-2026-SERV-01 | MUST | Any node is removable from the rack without interrupting power distribution, network switching, or operation of any other node | Quote; rack design review |
 | SLAM-2026-SERV-02 | MUST | Rack-mount chassis has an easily operable rail system compatible with the 19 inch installation rack | Quote; physical inspection |
 | SLAM-2026-SERV-03 | MUST | Internal access requires no special tooling beyond standard hand tools | Physical inspection |
-| SLAM-2026-SERV-04 | MUST | VGA port for local console. DVI/HDMI/DisplayPort is acceptable only if a compatible monitor and cables are **permanently** co-located with the system | Physical inspection |
-| SLAM-2026-SERV-05 | MUST | Each installation maintains a crash cart (monitor supporting all video interfaces, keyboard, mouse, required cables) usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner. One crash cart is recommended for every two physical racks of systems. The minimum required number will be determined by SLAM taking into account data center layout and available space | Installation review |
-| SLAM-2026-SERV-06 | MAY | A rack mount KVM replaces a crash cart under SLAM-2026-SERV-05, provided a KVM is in every rack the crash cart would service and its cables reach all servers in neighboring racks | Installation review |
-| SLAM-2026-SERV-07 | MUST | Each installation has at least one mobile crash cart regardless of SLAM-2026-SERV-06 | Installation review |
-| SLAM-2026-SERV-08 | MUST | A vendor hardware support contract covering repair/replacement, firmware update availability, and support escalation is in place for the node's operational lifetime | Quote; contract |
-| SLAM-2026-SERV-09 | MUST | The chassis serial number matches across the physical label, `dmidecode -s system-serial-number`, and Redfish `/Systems/*` | Physical inspection; `dmidecode`; Redfish `GET /redfish/v1/Systems/*` |
+| SLAM-2026-SERV-04 | MUST | A vendor hardware support contract covering repair/replacement, firmware update availability, and support escalation is in place for the node's operational lifetime | Quote; contract |
+| SLAM-2026-SERV-05 | MUST | The chassis serial number matches across the physical label, `dmidecode -s system-serial-number`, and Redfish `/Systems/*` | Physical inspection; `dmidecode`; Redfish `GET /redfish/v1/Systems/*` |
+| SLAM-2026-SERV-06 | MUST | VGA port for local console. DVI/HDMI/DisplayPort is acceptable only if a compatible monitor and cables are **permanently** co-located with the system | Physical inspection |
+| SLAM-2026-SERV-07 | MUST | Each installation maintains a crash cart (monitor supporting all video interfaces, keyboard, mouse, required cables) usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner. One crash cart is recommended for every two physical racks of systems. The minimum required number will be determined by SLAM taking into account data center layout and available space | Installation review |
+| SLAM-2026-SERV-08 | MAY | A rack mount KVM replaces a crash cart under SLAM-2026-SERV-07, provided a KVM is in every rack the crash cart would service and its cables reach all servers in neighboring racks | Installation review |
+| SLAM-2026-SERV-09 | MUST | Each installation has at least one mobile crash cart regardless of SLAM-2026-SERV-08 | Installation review |
 
 Minimum hardware support tier is an open question (see SLAM-2026-OQ-01).
 
@@ -196,24 +196,24 @@ Minimum hardware support tier is an open question (see SLAM-2026-OQ-01).
   remote with limited on-site staff. A node that slides out on rails and
   opens with a screwdriver can be serviced by whoever is present; one
   needing a lift or a vendor-specific tool waits for a site visit.
-- **VGA console (SERV-04)**: crash carts and rack KVMs are overwhelmingly
-  VGA. HDMI or DisplayPort is only acceptable when a matching monitor
-  and cables are guaranteed to be at the rack, because a console with no
-  matching display is no console.
-- **Crash cart coverage (SERV-05, SERV-06, SERV-07)**: one cart per two
-  racks keeps a console within reach of every node. A rack KVM may
-  substitute for the common case, but the mobile cart is still required
-  because the KVM itself can fail and cables do not reach nodes in
-  neighboring racks.
-- **Support contract (SERV-08)**: the contract is what provides
+- **Support contract (SERV-04)**: the contract is what provides
   replacement parts, firmware updates, and an escalation path for the
   full service life. Without it a hardware fault becomes a procurement
   exercise.
-- **Consistent serial numbers (SERV-09)**: the physical label, DMI, and
+- **Consistent serial numbers (SERV-05)**: the physical label, DMI, and
   Redfish are the three places a serial number is read: by a technician,
   by the OS inventory, and by out-of-band automation. If they disagree,
   asset records and support-contract claims cannot be matched to the
   node in the rack.
+- **VGA console (SERV-06)**: crash carts and rack KVMs are overwhelmingly
+  VGA. HDMI or DisplayPort is only acceptable when a matching monitor
+  and cables are guaranteed to be at the rack, because a console with no
+  matching display is no console.
+- **Crash cart coverage (SERV-07, SERV-08, SERV-09)**: one cart per two
+  racks keeps a console within reach of every node. A rack KVM may
+  substitute for the common case, but the mobile cart is still required
+  because the KVM itself can fail and cables do not reach nodes in
+  neighboring racks.
 
 ---
 
