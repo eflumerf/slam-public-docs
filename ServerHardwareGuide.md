@@ -111,7 +111,7 @@ operational risk across the service life.
 | SLAM-2026-PLAT-05 | MUST | NUMA topology is reported correctly to the OS. Single-node NUMA is acceptable | `numactl --hardware` |
 | SLAM-2026-PLAT-06 | MUST | UEFI boot | `ls /sys/firmware/efi` |
 | SLAM-2026-PLAT-07 | MUST | Secure Boot capable | `mokutil --sb-state` |
-| SLAM-2026-PLAT-08 | MUST | Hardware virtualization support (VT-x or AMD-V) | `grep -E 'vmx|svm' /proc/cpuinfo`; `virt-host-validate` |
+| SLAM-2026-PLAT-08 | MUST | Hardware virtualization support (VT-x or AMD-V) | `grep -E 'vmx\|svm' /proc/cpuinfo`; `virt-host-validate` |
 | SLAM-2026-PLAT-09 | MUST | IOMMU support (VT-d, AMD-Vi, or equivalent) | `virt-host-validate`; `dmesg \| grep -i iommu` |
 | SLAM-2026-PLAT-10 | MUST | Listed on the current [RHEL Hardware Compatibility List](https://catalog.redhat.com/hardware) | Quote; catalog lookup |
 | SLAM-2026-PLAT-11 | MUST | CPU and RAM meet RHEL minimums and do not exceed RHEL maximums for the intended configuration | Quote |
