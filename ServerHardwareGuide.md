@@ -50,6 +50,14 @@ item is checked against the vendor quote or datasheet before purchase.
 Commands are run on the delivered system from a RHEL/AlmaLinux install.
 Detailed acceptance procedures will be provided in a separate checklist.
 
+### Fleet Standardization
+
+When procuring multiple systems, care SHOULD be taken to minimize the
+number of different parts (for example hard disks, RAID controllers,
+power supplies, and network interfaces). Fewer distinct components
+reduce spares inventory, monitoring complexity, firmware variance, and
+operational risk across the service life.
+
 ---
 
 ## Prohibited
@@ -170,7 +178,7 @@ Hardware TPM requirements are in the Hardware TPM v2 section
 | SLAM-2026-SERV-02 | MUST | Rack-mount chassis has an easily operable rail system compatible with the 19 inch installation rack | Quote; physical inspection |
 | SLAM-2026-SERV-03 | MUST | Internal access requires no special tooling beyond standard hand tools | Physical inspection |
 | SLAM-2026-SERV-04 | MUST | VGA port for local console. HDMI/DisplayPort is acceptable only if a compatible monitor and cables are **permanently** co-located with the system | Physical inspection |
-| SLAM-2026-SERV-05 | MUST | Each installation maintains a crash cart (monitor supporting all video interfaces, keyboard, mouse, required cables) usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner. One crash cart is required for every two physical racks of systems | Installation review |
+| SLAM-2026-SERV-05 | MUST | Each installation maintains a crash cart (monitor supporting all video interfaces, keyboard, mouse, required cables) usable on all deployed nodes. The crash cart is the responsibility of the experiment or installation owner. One crash cart is recommended for every two physical racks of systems. The minimum required number will be determined by SLAM taking into account data center layout and available space | Installation review |
 | SLAM-2026-SERV-06 | MAY | A rack mount KVM replaces a crash cart under SLAM-2026-SERV-05, provided a KVM is in every rack the crash cart would service and its cables reach all servers in neighboring racks | Installation review |
 | SLAM-2026-SERV-07 | MUST | Each installation has at least one mobile crash cart regardless of SLAM-2026-SERV-06 | Installation review |
 | SLAM-2026-SERV-08 | MUST | A vendor hardware support contract covering repair/replacement, firmware update availability, and support escalation is in place for the node's operational lifetime | Quote; contract |
@@ -281,7 +289,9 @@ SLAM-2026-BMC-08.
 
 Data volumes are storage volumes used for experiment or DAQ data. They are
 distinct from the system volume covered by SLAM-2026-STOR-14 and
-SLAM-2026-STOR-15.
+SLAM-2026-STOR-15. A data volume MAY reside on the same physical RAID
+array as the system volume when the combined capacity and performance
+meet the workload requirements.
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
