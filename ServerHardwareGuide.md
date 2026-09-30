@@ -588,7 +588,7 @@ substitutes for a person at the console.
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-TPM-01 | MUST | Hardware TPM 2.0 is present. It MAY be integrated into the motherboard, CPU, or another component | `tpm2_getcap properties-fixed` |
+| SLAM-2026-TPM-01 | MUST | Hardware TPM 2.0+ is present. It MAY be integrated into the motherboard, CPU, or another component | `tpm2_getcap properties-fixed` |
 | SLAM-2026-TPM-02 | MUST | TPM is driven by an in-tree Linux driver and exposed as `/dev/tpmrm0` | `ls /dev/tpmrm0` |
 | SLAM-2026-TPM-03 | MUST | TPM has a SHA-256 PCR bank | `tpm2_pcrread sha256` |
 | SLAM-2026-TPM-04 | MUST | TPM is fully usable via `tpm2-tools` / TPM2-TSS | `tpm2_getcap algorithms` |
@@ -602,7 +602,7 @@ and zero-trust identity anchoring. All three depend on a TPM that Linux
 can drive fully and whose identity can be validated without an external
 route.
 
-- **TPM 2.0 present (TPM-01)**: TPM 1.2 lacks the algorithm agility and
+- **TPM 2.0+ present (TPM-01)**: TPM 1.2 lacks the algorithm agility and
   the tooling support required below. The physical form (discrete,
   firmware, or integrated) does not matter as long as the remaining
   requirements are met.
