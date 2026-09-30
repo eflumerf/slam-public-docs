@@ -403,6 +403,7 @@ required for the DAQ Data-Path interfaces except SLAM-2026-NET-01.
 | SLAM-2026-NET-13 | MUST | DAQ data-path add-in NICs support RoCE v2 | Quote; `rdma link` |
 | SLAM-2026-NET-14 | MUST | DAQ data-path add-in NICs have an upstream DPDK poll-mode driver | Quote; `dpdk-devbind.py -s` |
 | SLAM-2026-NET-15 | MUST | DAQ data-path NICs support PTP hardware timestamping | `ethtool -T <if>` shows hardware transmit and receive timestamping |
+| SLAM-2026-NET-16 | SHOULD | DAQ data-path NICs use OCP NIC 3.0 or newer form factor | Quote; physical inspection |
 
 ### Rationale
 
@@ -447,6 +448,12 @@ required for the DAQ Data-Path interfaces except SLAM-2026-NET-01.
   data-path NICs; the facility interface carries management and
   provisioning traffic and does not need them. Requiring them there
   would exclude most onboard 10GBase-T controllers.
+- **OCP NIC 3.0 form factor (NET-16)**: OCP NIC 3.0 is an open,
+  multi-vendor form factor with tool-less replaceability and a common
+  thermal envelope. It avoids proprietary mezzanine cards, reduces spares
+  inventory by letting NICs from different vendors serve the same slot,
+  and simplifies replacement at remote sites where vendor-specific parts
+  may not be on hand.
 
 ---
 
