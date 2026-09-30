@@ -521,7 +521,7 @@ on an air-gapped network with nobody on site.
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-BMC-01 | MUST | All BMC features (remote console, virtual media, Redfish, firmware update) are included with perpetual licenses at procurement. No capability tiers | Quote |
-| SLAM-2026-BMC-02 | MUST | If an exception to SLAM-2026-BMC-01 is approved for a vendor that only offers time-limited licenses, expiration is tracked in monitoring or the asset management system and renewal is budgeted for the full support window | Exception record; asset record |
+| SLAM-2026-BMC-02 | MUST | If an exception to SLAM-2026-BMC-01 is approved for a vendor that only offers time-limited licenses, expiration is tracked in monitoring or the asset management system and renewal is budgeted for the full support window of the hardware | Exception record; asset record |
 | SLAM-2026-BMC-03 | MUST | BMC operates independently of OS state during OS installation, kernel panic, and power-cycle recovery | Test |
 | SLAM-2026-BMC-04 | MUST | Remote serial console (SOL) | `ipmitool sol activate`; Redfish `SerialConsole` |
 | SLAM-2026-BMC-05 | MUST | Remote graphical console (HTML5/VNC or equivalent) | Test |
