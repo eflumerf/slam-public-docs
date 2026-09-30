@@ -243,33 +243,32 @@ SLAM-2026-BMC-14.
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-STOR-01 | MUST | All drive bays used for RAID arrays support hot-swap | Quote |
-| SLAM-2026-STOR-02 | MUST NOT | Use RAID controllers that obscure per-drive SMART data | Quote; `smartctl --scan-open`; `storcli /c0 show` |
+| SLAM-2026-STOR-02 | MUST | RAID controllers MUST NOT obscure per-drive SMART data; per-drive SMART MUST be readable from Linux for drives behind RAID controllers | Quote; `smartctl -a -d megaraid,N /dev/sdX`; `storcli /c0 show` |
 | SLAM-2026-STOR-03 | MUST | Per-drive health and wear is readable from Linux for every drive type | `smartctl --scan-open`; `nvme list`; `nvme smart-log` |
-| SLAM-2026-STOR-04 | MUST | Per-drive health and wear is readable for drives behind RAID controllers | `smartctl -a -d megaraid,N /dev/sdX` |
-| SLAM-2026-STOR-05 | MUST | SSDs provide power-loss protection for in-flight writes | Vendor datasheet; `smartctl -a` (PLP/Power Loss Protection field) |
+| SLAM-2026-STOR-04 | MUST | SSDs provide power-loss protection for in-flight writes | Vendor datasheet; `smartctl -a` (PLP/Power Loss Protection field) |
 
 ### HDD and SATA SSD
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-STOR-06 | MUST | Broadcom-based hardware RAID controller with a write cache that survives power loss and requires no scheduled replacement over the node's service life | Quote; `storcli /c0 show` |
-| SLAM-2026-STOR-07 | MUST | RAID1 or RAID10 for redundant arrays. RAID5 or RAID6 MAY be used only when capacity matters more than performance and rebuild time | `storcli /c0 /vall show` |
+| SLAM-2026-STOR-05 | MUST | Broadcom-based hardware RAID controller with a write cache that survives power loss and requires no scheduled replacement over the node's service life | Quote; `storcli /c0 show` |
+| SLAM-2026-STOR-06 | MUST | RAID1 or RAID10 for redundant arrays. RAID5 or RAID6 MAY be used only when capacity matters more than performance and rebuild time | `storcli /c0 /vall show` |
 
 ### NVMe
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-STOR-08 | MUST | NVMe is configured as one of: `mdadm` software RAID, hardware RAID (controller supported per SLAM-2026-STOR-13), LVM on raw devices, or raw devices | `lsblk` |
-| SLAM-2026-STOR-09 | MUST | NVMe drives are installed in pairs | Quote; `lsblk` |
-| SLAM-2026-STOR-10 | MUST | RAID is the expected NVMe configuration | Quote; `lsblk` |
-| SLAM-2026-STOR-11 | SHOULD | `mdadm` is used for NVMe RAID1/RAID10 | `cat /proc/mdstat` |
-| SLAM-2026-STOR-12 | SHOULD | NVMe drives are installed in hot-swappable bays (e.g. U.2, U.3). Non-hot-swap form factors such as M.2 require justification in the procurement request | Quote; physical inspection |
+| SLAM-2026-STOR-07 | MUST | NVMe is configured as one of: `mdadm` software RAID, hardware RAID (controller supported per SLAM-2026-STOR-12), LVM on raw devices, or raw devices | `lsblk` |
+| SLAM-2026-STOR-08 | MUST | NVMe drives are installed in pairs | Quote; `lsblk` |
+| SLAM-2026-STOR-09 | MUST | RAID is the expected NVMe configuration | Quote; `lsblk` |
+| SLAM-2026-STOR-10 | SHOULD | `mdadm` is used for NVMe RAID1/RAID10 | `cat /proc/mdstat` |
+| SLAM-2026-STOR-11 | SHOULD | NVMe drives are installed in hot-swappable bays (e.g. U.2, U.3). Non-hot-swap form factors such as M.2 require justification in the procurement request | Quote; physical inspection |
 
 ### Hardware RAID Management Tooling
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-STOR-13 | MUST | Any hardware RAID controller is fully manageable from Linux with one of the tools below | Tool runs and enumerates the controller |
+| SLAM-2026-STOR-12 | MUST | Any hardware RAID controller is fully manageable from Linux with one of the tools below | Tool runs and enumerates the controller |
 
 | Tool | Scope |
 |---|---|
@@ -286,34 +285,34 @@ on a data volume when workload needs justify it.
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-STOR-14 | MUST | OS volume is at least 256 GB usable (after any RAID) | `lsblk` |
-| SLAM-2026-STOR-15 | MUST | OS volume resides on a RAID array | `lsblk`; `cat /proc/mdstat` or `storcli /c0 show` |
+| SLAM-2026-STOR-13 | MUST | OS volume is at least 256 GB usable (after any RAID) | `lsblk` |
+| SLAM-2026-STOR-14 | MUST | OS volume resides on a RAID array | `lsblk`; `cat /proc/mdstat` or `storcli /c0 show` |
 
 ### Data Volume(s)
 
 Data volumes are storage volumes used for experiment or DAQ data. They are
-distinct from the system volume covered by SLAM-2026-STOR-14 and
-SLAM-2026-STOR-15. A data volume MAY reside on the same physical RAID
+distinct from the system volume covered by SLAM-2026-STOR-13 and
+SLAM-2026-STOR-14. A data volume MAY reside on the same physical RAID
 array as the system volume when the combined capacity and performance
 meet the workload requirements.
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
-| SLAM-2026-STOR-16 | MUST | Data volumes reside on a RAID array | `lsblk`; `cat /proc/mdstat` or `storcli /c0 show` |
+| SLAM-2026-STOR-15 | MUST | Data volumes reside on a RAID array | `lsblk`; `cat /proc/mdstat` or `storcli /c0 show` |
 
 ### Rationale
 
 - **Hot-swap RAID bays (STOR-01)**: the point of RAID is to survive a
   drive failure without downtime. If replacing the failed member
   requires powering off the node, the downtime has only been deferred.
-- **Per-drive SMART, including behind RAID (STOR-02, STOR-03,
-  STOR-04)**: STOR-02 prohibits controllers that obscure per-drive
-  SMART data. STOR-03 and STOR-04 require that wear and pre-failure
-  indicators are readable from Linux for every drive type and for drives
-  behind RAID controllers. These indicators are the only warning before
-  a drive drops out and a rebuild starts; hiding them turns every
+- **Per-drive SMART, including behind RAID (STOR-02, STOR-03)**:
+  STOR-02 requires both that RAID controllers do not obscure per-drive
+  SMART data and that SMART remains readable from Linux for drives
+  behind RAID controllers. STOR-03 extends that visibility to every
+  drive type. Wear and pre-failure indicators are the only warning
+  before a drive drops out and a rebuild starts; hiding them turns every
   failure into a surprise.
-- **Power-loss protection (STOR-05, STOR-06)**: there are two volatile
+- **Power-loss protection (STOR-04, STOR-05)**: there are two volatile
   write caches between the OS and the media, and each needs its own
   protection.
   - SSDs buffer writes in on-drive DRAM. Only on-drive PLP (capacitors
@@ -332,36 +331,36 @@ meet the workload requirements.
     performance drop nobody sees and a maintenance visit nobody makes on
     a remote site. Capacitor-backed flash cache (Broadcom CacheVault and
     equivalents) meets the requirement without a maintenance item.
-- **RAID1/RAID10 default (STOR-07)**: a RAID5/6 rebuild on large drives
+- **RAID1/RAID10 default (STOR-06)**: a RAID5/6 rebuild on large drives
   is a multi-day window in which a second failure loses the array, on a
   system with no on-site staff. Mirrors rebuild in hours and are the
   default; parity RAID is reserved for cases where capacity outweighs
   that exposure.
-- **NVMe configuration (STOR-08, STOR-10)**: the allowed configurations
+- **NVMe configuration (STOR-07, STOR-09)**: the allowed configurations
   are the ones standard RHEL tooling manages and monitors. RAID is the
   expected choice; raw or LVM-on-raw is permitted for workloads that
   provide redundancy elsewhere, but the exception must be recorded
   so it is not mistaken for an oversight later.
-- **NVMe in pairs (STOR-09)**: RAID1/RAID10 needs an even member count.
+- **NVMe in pairs (STOR-08)**: RAID1/RAID10 needs an even member count.
   Buying in pairs keeps the RAID path open even when a system is
   initially deployed with raw devices.
-- **`mdadm` for NVMe (STOR-11)**: `mdadm` RAID1/RAID10 matches native
+- **`mdadm` for NVMe (STOR-10)**: `mdadm` RAID1/RAID10 matches native
   NVMe performance, is monitored by the kernel and standard tooling, and
   has no vendor dependency. Hardware RAID is allowed only where the
-  controller is fully covered by STOR-13.
-- **NVMe hot-swap bays (STOR-12)**: a failed U.2/U.3 drive is replaced
+  controller is fully covered by STOR-12.
+- **NVMe hot-swap bays (STOR-11)**: a failed U.2/U.3 drive is replaced
   from the front of the chassis. M.2 requires opening the node, which
   makes the replacement a chassis service event and usually a shutdown.
-- **Broadcom, one toolset (STOR-06, STOR-13)**: one controller family
+- **Broadcom, one toolset (STOR-05, STOR-12)**: one controller family
   and one management tool across all installations means one set of
   monitoring scripts, one spares pool, and one runbook. A controller
   that cannot be managed from Linux cannot be monitored or repaired
   remotely.
-- **System volume (STOR-14, STOR-15)**: 256 GB leaves room for several
+- **System volume (STOR-13, STOR-14)**: 256 GB leaves room for several
   installed kernels, crash dumps, logs, and an in-place major-version
   upgrade. Placing the OS on RAID means a single boot-drive failure does
   not take the node offline.
-- **Data volumes on RAID (STOR-16)**: experiment and DAQ data must
+- **Data volumes on RAID (STOR-15)**: experiment and DAQ data must
   survive a single drive failure without on-site intervention.
 
 ---
