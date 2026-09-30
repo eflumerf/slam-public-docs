@@ -4,7 +4,7 @@
 
 **Applies To:** server-class deployments
 
-**Last Reviewed:** 2026-09-29
+**Last Reviewed:** 2026-09-30
 
 ---
 
@@ -280,6 +280,11 @@ SLAM-2026-BMC-08.
 
 ### System Volume
 
+The system volume holds the operating system, installed software, and
+system state. It is not required to include `/home` or other
+user-writable directories; those MAY reside on a separate filesystem or
+on a data volume when workload needs justify it.
+
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-STOR-14 | MUST | OS volume is at least 256 GB usable (after any RAID) | `lsblk` |
@@ -361,6 +366,12 @@ meet the workload requirements.
 
 ## Networking
 
+### Facility and Management Networking
+
+These requirements apply to the primary facility/management network
+interface and to any network port used for provisioning, remote
+administration, or facility traffic.
+
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-NET-01 | SHOULD | Onboard RJ45 Ethernet for the primary facility network interface. Optical or external network cards must justify their use | Quote; `ethtool <if>` (Port: Twisted Pair) |
@@ -373,12 +384,23 @@ meet the workload requirements.
 | SLAM-2026-NET-08 | MUST | Network boot supports PXE and UEFI HTTP boot over IPv4 | Boot test on facility network |
 | SLAM-2026-NET-09 | MUST | Network boot supports PXE and UEFI HTTP boot over IPv6 | Boot test on facility network |
 | SLAM-2026-NET-10 | MUST | UEFI HTTP boot implementations with dual-stack quirks are validated before deployment | Boot test on facility network |
+
+### DAQ Data-Path Networking
+
+These requirements apply only to add-in NICs used for experiment or DAQ
+data traffic. They are not required for the facility/management
+interface.
+
+| ID | Level | Requirement | Verify |
+|---|---|---|---|
 | SLAM-2026-NET-11 | MUST | DAQ data-path add-in NICs support SR-IOV | Quote; `lspci -vv` (SR-IOV capability) |
 | SLAM-2026-NET-12 | MUST | DAQ data-path add-in NICs support RoCE v2 | Quote; `rdma link` |
 | SLAM-2026-NET-13 | MUST | DAQ data-path add-in NICs have an upstream DPDK poll-mode driver | Quote; `dpdk-devbind.py -s` |
 | SLAM-2026-NET-14 | MUST | DAQ data-path NICs support PTP hardware timestamping | `ethtool -T <if>` shows hardware transmit and receive timestamping |
 
 ### Rationale
+
+**Facility and Management Networking**
 
 - **Onboard copper for the facility interface (NET-01)**: RJ45 is the
   lowest-variance option across a 10-year refresh cycle of facility
@@ -406,6 +428,9 @@ meet the workload requirements.
   primary recovery method. UEFI HTTP boot implementations vary in how
   they handle dual-stack, so the specific firmware is tested rather than
   assumed.
+
+**DAQ Data-Path Networking**
+
 - **DAQ data-path features (NET-11, NET-12, NET-13, NET-14)**: SR-IOV,
   RoCE v2, an upstream DPDK driver, and PTP hardware timestamping are
   the baseline DAQ data-path toolkit. They are required only on add-in
