@@ -123,8 +123,7 @@ operational risk across the service life.
 `aarch64` MAY be approved on a case by case basis as an alternative to
 SLAM-2026-PLAT-01.
 
-Hardware TPM requirements are in the Hardware TPM v2 section
-(SLAM-2026-TPM-01 through SLAM-2026-TPM-06).
+Hardware TPM requirements are in the Hardware TPM v2 section.
 
 ### Rationale
 
