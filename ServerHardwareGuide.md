@@ -389,8 +389,12 @@ administration, or facility traffic.
 ### DAQ Data-Path Networking
 
 These requirements apply only to add-in NICs used for experiment or DAQ
-data traffic. They are not required for the facility/management
-interface.
+data traffic.
+
+They are not required for the facility/management interface.
+
+All the requirements of the facility/management interface are also
+required for the DAQ Data-Path interfaces except SLAM-2026-NET-01.
 
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
