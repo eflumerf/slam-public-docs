@@ -225,14 +225,14 @@ Minimum hardware support tier is an open question (see SLAM-2026-OQ-01).
 | SLAM-2026-PWR-02 | MUST | PSUs are hot-swappable | Quote |
 
 PSU state and consumption monitoring through the BMC is required by
-SLAM-2026-BMC-08.
+SLAM-2026-BMC-14.
 
 ### Rationale
 
 - **Redundant, hot-swap PSUs (PWR-01, PWR-02)**: PSU failure is a
   common field repair. With N+1 redundancy the node keeps running
   on the remaining supply; with hot-swap the replacement is a scheduled
-  visit rather than a shutdown. Monitoring through the BMC (BMC-08) is
+  visit rather than a shutdown. Monitoring through the BMC (BMC-14) is
   what makes the failure visible before the second supply fails.
 
 ---
@@ -523,19 +523,20 @@ on an air-gapped network with nobody on site.
 | SLAM-2026-BMC-01 | MUST | All BMC features (remote console, virtual media, Redfish, firmware update) are included with perpetual licenses at procurement. No capability tiers | Quote |
 | SLAM-2026-BMC-02 | MUST | If an exception to SLAM-2026-BMC-01 is approved for a vendor that only offers time-limited licenses, expiration is tracked in monitoring or the asset management system and renewal is budgeted for the full support window of the hardware | Exception record; asset record |
 | SLAM-2026-BMC-03 | MUST | BMC operates independently of OS state during OS installation, kernel panic, and power-cycle recovery | Test |
-| SLAM-2026-BMC-04 | MUST | Remote serial console (SOL) | `ipmitool sol activate`; Redfish `SerialConsole` |
-| SLAM-2026-BMC-05 | MUST | Remote graphical console (HTML5/VNC or equivalent) | Test |
-| SLAM-2026-BMC-06 | MUST | Remote firmware update | Redfish `UpdateService`; Web UI |
-| SLAM-2026-BMC-07 | MUST | Remote BIOS/UEFI configuration | Redfish `Bios`; Web UI |
-| SLAM-2026-BMC-08 | MUST | Power supply state and consumption are readable | Redfish `/Chassis/*/Power`; `ipmitool sdr` |
-| SLAM-2026-BMC-09 | MUST | Fan speeds are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Fan` |
-| SLAM-2026-BMC-10 | MUST | System temperatures are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Temperature` |
-| SLAM-2026-BMC-11 | MUST | IPMI over LAN (`lanplus`) | `ipmitool -I lanplus ... chassis status` |
-| SLAM-2026-BMC-12 | MUST | Redfish 1.20 or newer, Redfish schema 2023.3 or newer | `GET /redfish/v1` (`RedfishVersion`) |
+| SLAM-2026-BMC-04 | MUST | Dedicated physical BMC port, connected to an isolated out-of-band management network | Physical inspection |
+| SLAM-2026-BMC-05 | MUST | IPMI over LAN (`lanplus`) | `ipmitool -I lanplus ... chassis status` |
+| SLAM-2026-BMC-06 | MUST | Redfish 1.20 or newer, Redfish schema 2023.3 or newer | `GET /redfish/v1` (`RedfishVersion`) |
+| SLAM-2026-BMC-07 | MUST | Remote serial console (SOL) | `ipmitool sol activate`; Redfish `SerialConsole` |
+| SLAM-2026-BMC-08 | MUST | BIOS/UEFI serial console redirection is enabled so that SOL covers firmware setup and early boot | `ipmitool sol activate` during firmware POST; BIOS settings |
+| SLAM-2026-BMC-09 | MUST | Remote graphical console (HTML5/VNC or equivalent) | Test |
+| SLAM-2026-BMC-10 | MUST | Remote BIOS/UEFI configuration | Redfish `Bios`; Web UI |
+| SLAM-2026-BMC-11 | MUST | Boot order is configurable via Redfish | Redfish `Boot` property under `/Systems/*`; test |
+| SLAM-2026-BMC-12 | MUST | Remote firmware update | Redfish `UpdateService`; Web UI |
 | SLAM-2026-BMC-13 | MUST | BMC configuration (users, network, BIOS settings) is fully exportable and importable via Redfish | Test export/import |
-| SLAM-2026-BMC-14 | MUST | Dedicated physical BMC port, connected to an isolated out-of-band management network | Physical inspection |
-| SLAM-2026-BMC-15 | MUST | BIOS/UEFI serial console redirection is enabled so that SOL covers firmware setup and early boot | `ipmitool sol activate` during firmware POST; BIOS settings |
-| SLAM-2026-BMC-16 | MUST | Boot order is configurable via Redfish | Redfish `Boot` property under `/Systems/*`; test |
+| SLAM-2026-BMC-14 | MUST | Power supply state and consumption are readable | Redfish `/Chassis/*/Power`; `ipmitool sdr` |
+| SLAM-2026-BMC-15 | MUST | Fan speeds are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Fan` |
+| SLAM-2026-BMC-16 | MUST | System temperatures are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Temperature` |
+| SLAM-2026-BMC-17 | MUST | SEL/event log is readable via Redfish `LogServices` | Redfish `/Systems/*/LogServices`; entries retrievable |
 
 ### Rationale
 
@@ -552,35 +553,33 @@ substitutes for a person at the console.
   the OS is unavailable: installation, kernel panic, power-cycle
   recovery. A BMC that depends on a host agent or host power state fails
   exactly when it is needed.
-- **Serial, graphical, and firmware-stage console (BMC-04, BMC-05,
-  BMC-15)**: SOL covers the kernel console and text-mode recovery;
-  the graphical console covers installers and firmware UIs; BIOS serial
-  redirection extends SOL back into POST and firmware setup. Together
-  they replace the crash cart for everything except a physical swap.
-- **Remote firmware, BIOS, and boot-order control (BMC-06, BMC-07,
-  BMC-16)**: these three operations are what unattended provisioning
-  and recovery consist of: set the firmware configuration, point the
-  node at network boot, reinstall. Any of them requiring physical
-  presence turns a remote reinstall into a site visit.
-- **Power, fan, and temperature telemetry (BMC-08, BMC-09, BMC-10)**:
-  PSU, fan, and cooling failures are the common hardware faults, and all
-  three give warning before they become outages if the readings are
-  collected. Reading them out of band means they are still available
-  when the OS is down or when the OS has no vendor sensor driver.
-- **IPMI and Redfish (BMC-11, BMC-12)**: Redfish is the automation
-  interface and the one with a versioned schema; the minimum version
-  pins the feature set that the fleet tooling depends on. IPMI over LAN
-  is retained because existing tooling and SOL workflows use it.
-  Disabling IPMI when unused is an open question (OQ-03).
-- **Exportable configuration (BMC-13)**: a BMC configuration that can be
-  exported and re-imported via Redfish is what makes a batch of nodes
-  reproducible, and a replacement node identical to the one it replaces,
-  without hand-entry through a web UI.
-- **Dedicated, isolated management port (BMC-14)**: the BMC is the most
+- **Dedicated, isolated management port (BMC-04)**: the BMC is the most
   privileged interface on the node and has its own firmware, network
   stack, and vulnerability history. A dedicated port on an isolated
   network keeps it off the data and facility networks and leaves it
   reachable when those networks are misconfigured.
+- **IPMI and Redfish (BMC-05, BMC-06)**: Redfish is the automation
+  interface and the one with a versioned schema; the minimum version
+  pins the feature set that the fleet tooling depends on. IPMI over LAN
+  is retained because existing tooling and SOL workflows use it.
+  Disabling IPMI when unused is an open question (OQ-03).
+- **Serial, graphical, and firmware-stage console (BMC-07, BMC-08,
+  BMC-09)**: SOL covers the kernel console and text-mode recovery;
+  the graphical console covers installers and firmware UIs; BIOS serial
+  redirection extends SOL back into POST and firmware setup. Together
+  they replace the crash cart for everything except a physical swap.
+- **Remote configuration and control (BMC-10, BMC-11, BMC-12,
+  BMC-13)**: BIOS configuration, boot order, firmware update, and BMC
+  configuration export/import are the operations that unattended
+  provisioning and recovery consist of. Any of them requiring physical
+  presence turns a remote reinstall or replacement into a site visit.
+- **Power, fan, temperature, and event-log telemetry (BMC-14, BMC-15,
+  BMC-16, BMC-17)**: PSU, fan, cooling, and platform event-log failures
+  are the common hardware faults, and all four give warning before they
+  become outages if the readings are collected. Reading them out of band
+  means they are still available when the OS is down or when the OS has
+  no vendor sensor driver. Redfish `LogServices` provides the SEL/event
+  log in the same API as the rest of the telemetry.
 
 ---
 
@@ -634,7 +633,7 @@ route.
 |---|---|---|
 | SLAM-2026-OQ-01 | Minimum vendor support tier: next-business-day on-site vs. depot return. Likely varies by installation access/location/geography | Serviceability |
 | SLAM-2026-OQ-02 | GPU vendor policy beyond NVIDIA `nvidia-open` | GPU |
-| SLAM-2026-OQ-03 | BMC security and operations baseline: central authentication (LDAP), owner-installed TLS certificates, ability to disable IPMI-over-LAN when unused, SEL/event log via Redfish `LogServices`, NTP, syslog forwarding | BMC |
+| SLAM-2026-OQ-03 | BMC security and operations baseline: central authentication (LDAP), owner-installed TLS certificates, ability to disable IPMI-over-LAN when unused, NTP, syslog forwarding | BMC |
 | SLAM-2026-OQ-04 | Should PSU input voltage and connector type be required to match the installation PDU at quote time? | Power |
 
 ---
