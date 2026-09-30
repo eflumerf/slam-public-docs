@@ -243,9 +243,9 @@ SLAM-2026-BMC-14.
 | ID | Level | Requirement | Verify |
 |---|---|---|---|
 | SLAM-2026-STOR-01 | MUST | All drive bays used for RAID arrays support hot-swap | Quote |
-| SLAM-2026-STOR-02 | MUST | Per-drive health and wear is readable from Linux for every drive type | `smartctl --scan-open`; `nvme list`; `nvme smart-log` |
-| SLAM-2026-STOR-03 | MUST | Per-drive health and wear is readable for drives behind RAID controllers | `smartctl -a -d megaraid,N /dev/sdX` |
-| SLAM-2026-STOR-04 | MUST NOT | Use RAID controllers that obscure per-drive SMART data | Quote; `smartctl --scan-open`; `storcli /c0 show` |
+| SLAM-2026-STOR-02 | MUST NOT | Use RAID controllers that obscure per-drive SMART data | Quote; `smartctl --scan-open`; `storcli /c0 show` |
+| SLAM-2026-STOR-03 | MUST | Per-drive health and wear is readable from Linux for every drive type | `smartctl --scan-open`; `nvme list`; `nvme smart-log` |
+| SLAM-2026-STOR-04 | MUST | Per-drive health and wear is readable for drives behind RAID controllers | `smartctl -a -d megaraid,N /dev/sdX` |
 | SLAM-2026-STOR-05 | MUST | SSDs provide power-loss protection for in-flight writes | Vendor datasheet; `smartctl -a` (PLP/Power Loss Protection field) |
 
 ### HDD and SATA SSD
@@ -307,9 +307,12 @@ meet the workload requirements.
   drive failure without downtime. If replacing the failed member
   requires powering off the node, the downtime has only been deferred.
 - **Per-drive SMART, including behind RAID (STOR-02, STOR-03,
-  STOR-04)**: wear and pre-failure indicators are the only warning
-  before a drive drops out and a rebuild starts. A controller that hides
-  them removes the warning and turns every failure into a surprise.
+  STOR-04)**: STOR-02 prohibits controllers that obscure per-drive
+  SMART data. STOR-03 and STOR-04 require that wear and pre-failure
+  indicators are readable from Linux for every drive type and for drives
+  behind RAID controllers. These indicators are the only warning before
+  a drive drops out and a rebuild starts; hiding them turns every
+  failure into a surprise.
 - **Power-loss protection (STOR-05, STOR-06)**: there are two volatile
   write caches between the OS and the media, and each needs its own
   protection.
