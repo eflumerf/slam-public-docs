@@ -1,67 +1,6 @@
 ## Setup:
 NOTE: EL10+ ONLY
 
-Resources:
-https://forge.puppet.com/modules/jcpunk/weston  # module by Pat Riehecky (v 0.6.2+)
-https://github.com/fermitools/fnal-vncpasswd  # packaged in Fermi context for EL10+
-
-You will need the following classes attached:
-  - weston
-  - weston::vnc_server
-
-Optionally:
-  - stdlib::manage
-
-In hiera put the following:
-
-```yaml
-weston::vnc_server::vnc_server_options:
-  - "--address=::1"
-  - "--disable-transport-layer-security"
-weston::manage_weston_ini: false # /etc/xdg/weston/weston.ini comes from fermilab-conf_screenlock
-
-stdlib::manage::create_resources:
-  package:
-    fermilab-conf_screenlock:
-      ensure: installed
-```
-
-If there is **no physical monitor** on this host (all SSI systems?) you can further simplify hiera to:
-
-```yaml
-weston::vnc_server::vnc_server_options:
-  - "--address=::1"
-  - "--disable-transport-layer-security"
-weston_ini_settings:
-  core:
-    idle-time: 900
-  shell:
-    locking: false
-    clock-format: "minutes-24h"
-  vnc:
-    mode: "1280x720"
-    resizeable: true
-stdlib::manage::create_resources:
-  package:
-    fermilab-conf_screenlock:
-      ensure: absent
-```
-
-Out of the box, weston will use your PAM stack for authentication.
-If you're using authselect you should have stable `login` substacks.
-
-To permit use of the fnal-vncpasswd binary you should update:
-`/etc/pam.d/weston-remote-access`
-
-This config probably works but you should evaluate your needs:
-
-```conf
-#%PAM-1.0
-auth    [success=done default=ignore] pam_fnal_vncpasswd.so
-auth    include login
-account include login
-```
-
 ## User interaction
 
 Weston is the only modern desktop that has retained a VNC backend in RHEL.
@@ -83,7 +22,7 @@ mode=1280x720
 resizeable=true
 ```
 
-Locking must be enabled if there are non-VNC users of Weston.
+**NOTE**: Locking must be enabled if there are non-VNC users of Weston.
 
 If fnal-vncpasswd is configured on your host for authentication, you can set a VNC password
 with the `fnal-vncpasswd` command. You should review its manpages for more information.
