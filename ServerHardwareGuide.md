@@ -555,6 +555,8 @@ on an air-gapped network with nobody on site.
 | SLAM-2026-BMC-15 | MUST | Fan speeds are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Fan` |
 | SLAM-2026-BMC-16 | MUST | System temperatures are readable | Redfish `/Chassis/*/Thermal`; `ipmitool sdr type Temperature` |
 | SLAM-2026-BMC-17 | MUST | SEL/event log is readable via Redfish `LogServices` | Redfish `/Systems/*/LogServices`; entries retrievable |
+| SLAM-2026-BMC-18 | MUST | Redfish service conforms to a DSP0272 interoperability profile for the server class, which lists the required schemas, properties, and registries. The profile is supplied by the vendor or DMTF | DMTF Redfish Interop Validator run against the profile reports no failures |
+| SLAM-2026-BMC-19 | SHOULD | Redfish is reachable from the host OS in-band through the DSP0270 Network Host Interface (host NIC or USB network link to the BMC), authenticated with the same accounts and privileges as the out-of-band service. AuthNone is not permitted | From the host: `curl -k https://<hi-address>/redfish/v1` returns ServiceRoot; unauthenticated request is rejected (401) |
 
 ### Rationale
 
@@ -598,6 +600,18 @@ substitutes for a person at the console.
   means they are still available when the OS is down or when the OS has
   no vendor sensor driver. Redfish `LogServices` provides the SEL/event
   log in the same API as the rest of the telemetry.
+- **Interoperability profile (BMC-18)**: BMC-06 sets only the Redfish
+  version and schema floor. DSP0272 defines a profile, a JSON document that
+  lists the schemas, properties, and registries a server class must
+  provide. The DMTF validator tests a live BMC against that list, which
+  turns "Redfish 1.20" into a checkable feature set.
+- **In-band Redfish (BMC-19)**: DSP0270 defines how host software reaches
+  the Redfish service without using the out-of-band network. The OS then
+  uses the same Redfish API as fleet automation, so no second code path is
+  needed. Using the same accounts keeps one credential set and one audit
+  trail. AuthNone is excluded because it would let any host process bypass
+  authentication. Rated SHOULD for now because the host-facing link is not
+  yet available on all target platforms.
 
 ---
 
